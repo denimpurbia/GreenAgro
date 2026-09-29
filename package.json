@@ -1,0 +1,33 @@
+{
+  "name": "agrin-intelligence-network",
+  "version": "1.0.0",
+  "description": "AgriN Intelligence Network & AgriSaarthi - AI-Powered Regenerative Agricultural Intelligence Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:all": "concurrently -n \"API,WEB\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev\"",
+    "build": "npm run build --workspace=apps/web",
+    "build:api": "npm run build --workspace=apps/api",
+    "seed": "npm run seed --workspace=apps/api",
+    "test": "npm run test --workspace=apps/api"
+  },
+  "keywords": [
+    "agriculture",
+    "ai",
+    "gemini",
+    "regenerative-agriculture",
+    "brics",
+    "satellite",
+    "earth-engine",
+    "soil-health"
+  ],
+  "author": "AgriN Intelligence Network Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
