@@ -109,12 +109,5 @@ npm run test
 
 ---
 
-## 🏆 Hackathon Compliance & Judging Alignment
-- **Problem-Solution Fit (20%)**: Directly solves smallholder climate vulnerability with practical, day-to-day guidance.
-- **AI / Technical Execution (25%)**: Google Gemini integrated for reasoning + deterministic agronomic calculation safeguards.
-- **Depth & Reach (20%)**: Dual English/Hindi i18n, speech-to-text ready, micro-climates across Indian states.
-- **Impact Potential (15%)**: Soil organic carbon accumulation, 22% water conservation via drip scheduling.
-- **Deployability (20%)**: Vercel/Cloud Run ready, zero-cost development tier, modular provider architecture.
-
 ## 📄 License
 Licensed under the Apache License, Version 2.0.
