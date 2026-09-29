@@ -77,8 +77,9 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Mount API routes under /api
+// Mount API routes under /api and root
 app.use('/api', apiRouter);
+app.use(apiRouter);
 
 // Global error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
