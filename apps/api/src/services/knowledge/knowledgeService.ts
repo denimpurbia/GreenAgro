@@ -231,11 +231,13 @@ export const INITIAL_BRICS_PRACTICES = [
 ];
 
 export class KnowledgeService {
+  private static isSeeded = false;
+
   /**
    * Seed / update the initial 5 verified BRICS research practices.
    */
   public static async ensureSeeded(): Promise<void> {
-    if (!isConnectedToDb) return;
+    if (!isConnectedToDb || this.isSeeded) return;
     try {
       for (const practice of INITIAL_BRICS_PRACTICES) {
         await KnowledgePracticeModel.findOneAndUpdate(
@@ -275,6 +277,7 @@ export class KnowledgeService {
           { upsert: true, new: true }
         );
       }
+      this.isSeeded = true;
       console.log('✅ KnowledgeService: Seeded & verified 5 BRICS research agricultural practices.');
     } catch (err) {
       console.error('KnowledgeService ensureSeeded error:', err);

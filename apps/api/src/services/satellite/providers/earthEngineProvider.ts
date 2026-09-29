@@ -107,79 +107,99 @@ export class EarthEngineSatelliteProvider
       process.env.GOOGLE_APPLICATION_CREDENTIALS ||
       '';
 
-    if (
-      !project.trim() ||
-      !credentialsPath.trim()
-    ) {
+    const rawJsonCreds =
+      process.env.EARTH_ENGINE_CREDENTIALS_JSON ||
+      process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ||
+      (credentialsPath.trim().startsWith('{') ? credentialsPath : '');
+
+    if (!project.trim()) {
       throw new Error(
-        'Earth Engine configuration is missing. Please check EARTH_ENGINE_PROJECT and GOOGLE_APPLICATION_CREDENTIALS.'
+        'Earth Engine configuration is missing: EARTH_ENGINE_PROJECT is not set.'
       );
     }
 
-    const candidatePaths = [
-      path.resolve(
-        process.cwd(),
-        credentialsPath
-      ),
+    if (!rawJsonCreds.trim() && !credentialsPath.trim()) {
+      throw new Error(
+        'Earth Engine configuration is missing: Please set GOOGLE_APPLICATION_CREDENTIALS (file path) or EARTH_ENGINE_CREDENTIALS_JSON (JSON string).'
+      );
+    }
 
-      path.resolve(
-        process.cwd(),
-        'apps/api',
-        credentialsPath
-      ),
+    let privateKey: any;
 
-      path.resolve(
-        __dirname,
-        '../../../../',
-        credentialsPath
-      ),
-
-      path.resolve(
-        __dirname,
-        '../../../',
-        credentialsPath
-      ),
-
-      path.resolve(
-        __dirname,
-        '../../',
-        credentialsPath
-      ),
-    ];
-
-    let resolvedCredentialsPath =
-      '';
-
-    for (
-      const candidate of candidatePaths
-    ) {
-      if (
-        fs.existsSync(candidate)
-      ) {
-        resolvedCredentialsPath =
-          candidate;
-
-        break;
+    if (rawJsonCreds.trim()) {
+      try {
+        privateKey = JSON.parse(rawJsonCreds.trim());
+      } catch (err: any) {
+        throw new Error(
+          `Failed to parse Earth Engine JSON credentials: ${err?.message || err}`
+        );
       }
-    }
+    } else {
+      const candidatePaths = [
+        path.resolve(
+          process.cwd(),
+          credentialsPath
+        ),
 
-    if (
-      !resolvedCredentialsPath
-    ) {
-      throw new Error(
-        `Earth Engine credentials file not found. Checked: ${candidatePaths.join(
-          ', '
-        )}`
-      );
-    }
+        path.resolve(
+          process.cwd(),
+          'apps/api',
+          credentialsPath
+        ),
 
-    const privateKey =
-      JSON.parse(
-        fs.readFileSync(
-          resolvedCredentialsPath,
-          'utf8'
-        )
-      );
+        path.resolve(
+          __dirname,
+          '../../../../',
+          credentialsPath
+        ),
+
+        path.resolve(
+          __dirname,
+          '../../../',
+          credentialsPath
+        ),
+
+        path.resolve(
+          __dirname,
+          '../../',
+          credentialsPath
+        ),
+      ];
+
+      let resolvedCredentialsPath =
+        '';
+
+      for (
+        const candidate of candidatePaths
+      ) {
+        if (
+          fs.existsSync(candidate)
+        ) {
+          resolvedCredentialsPath =
+            candidate;
+
+          break;
+        }
+      }
+
+      if (
+        !resolvedCredentialsPath
+      ) {
+        throw new Error(
+          `Earth Engine credentials file not found. Checked: ${candidatePaths.join(
+            ', '
+          )}`
+        );
+      }
+
+      privateKey =
+        JSON.parse(
+          fs.readFileSync(
+            resolvedCredentialsPath,
+            'utf8'
+          )
+        );
+    }
 
     EarthEngineSatelliteProvider.initPromise =
       new Promise<void>(

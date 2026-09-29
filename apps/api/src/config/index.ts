@@ -47,7 +47,7 @@ for (const envPath of candidateEnvPaths) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const config = {
-  port: parseInt(process.env.PORT || '5000', 10),
+  port: parseInt(process.env.PORT || '5000', 10) || 5000,
 
   nodeEnv: process.env.NODE_ENV || 'development',
 
@@ -123,15 +123,41 @@ export const config = {
   },
 
   get googleRedirectUri(): string {
-    return (
-      process.env.GOOGLE_CALLBACK_URL ||
-      process.env.GOOGLE_REDIRECT_URI ||
-      'http://localhost:5000/api/auth/google/callback'
-    );
+    if (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.trim()) {
+      return process.env.GOOGLE_CALLBACK_URL.trim();
+    }
+    if (process.env.GOOGLE_REDIRECT_URI && process.env.GOOGLE_REDIRECT_URI.trim()) {
+      return process.env.GOOGLE_REDIRECT_URI.trim();
+    }
+    if (process.env.BACKEND_URL && process.env.BACKEND_URL.trim()) {
+      const base = process.env.BACKEND_URL.trim().replace(/\/+$/, '');
+      return `${base}/api/auth/google/callback`;
+    }
+    // Automatically detect Vercel production or preview host URL
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()) {
+      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      return `https://${host}/api/auth/google/callback`;
+    }
+    if (process.env.VERCEL_URL && process.env.VERCEL_URL.trim()) {
+      const host = process.env.VERCEL_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      return `https://${host}/api/auth/google/callback`;
+    }
+    return 'http://localhost:5000/api/auth/google/callback';
   },
 
   get frontendUrl(): string {
-    return process.env.FRONTEND_URL || 'http://localhost:3000';
+    if (process.env.FRONTEND_URL && process.env.FRONTEND_URL.trim()) {
+      return process.env.FRONTEND_URL.split(',')[0].trim().replace(/\/+$/, '');
+    }
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()) {
+      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      return `https://${host}`;
+    }
+    if (process.env.VERCEL_URL && process.env.VERCEL_URL.trim()) {
+      const host = process.env.VERCEL_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      return `https://${host}`;
+    }
+    return 'http://localhost:3000';
   },
 };
 
@@ -150,7 +176,7 @@ console.log(
 );
 console.log(
   '[Config] Earth Engine credentials:',
-  process.env.GOOGLE_APPLICATION_CREDENTIALS
+  process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.EARTH_ENGINE_CREDENTIALS_JSON
     ? 'configured'
     : 'missing'
 );

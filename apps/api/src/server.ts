@@ -11,11 +11,11 @@ async function bootstrap() {
   await connectDatabase();
   await KnowledgeService.ensureSeeded();
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`====================================================`);
     console.log(`🌾 GreenAgro / AgriN Intelligence Network Backend`);
-    console.log(`🚀 Server listening on http://localhost:${PORT}`);
-    console.log(`📡 Health: http://localhost:${PORT}/api/health`);
+    console.log(`🚀 Server listening on 0.0.0.0:${PORT}`);
+    console.log(`📡 Health: http://0.0.0.0:${PORT}/api/health`);
     console.log(`🤖 Gemini Model: ${config.geminiModel}`);
     console.log(`🌦️  Weather: ${config.weatherProvider}`);
     console.log(`🛰️  Satellite: ${config.satelliteProvider}`);
