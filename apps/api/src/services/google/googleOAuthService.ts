@@ -12,23 +12,41 @@ export interface GoogleUserInfo {
 }
 
 /**
- * Secure, in-memory store for OAuth state tokens.
- * Each state is valid for 10 minutes.
+ * OAuth State Security
+ *
+ * In serverless environments (like Vercel), separate requests (e.g. /auth/google
+ * and /auth/google/callback) run on different container instances.
+ * An in-memory Map alone fails across container instances and cold starts, causing
+ * intermittent "invalid_state" security check errors on the first attempt.
+ *
+ * To solve this reliably:
+ * 1. State tokens are cryptographically signed with HMAC-SHA256 using a server secret.
+ * 2. Token payload includes a secure random nonce and a creation timestamp.
+ * 3. Token validity is checked against expiration (TTL: 15 minutes).
+ * 4. Timing-safe comparison is used to prevent timing attacks.
+ * 5. Consumed states are tracked locally to prevent replay within the same container.
  */
-const stateStore = new Map<string, number>();
-const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const STATE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-/**
- * Periodically clean up expired state tokens to prevent memory growth.
- */
-setInterval(() => {
+// In-memory track of consumed states to prevent replay
+const consumedStates = new Map<string, number>();
+
+function getOAuthStateSecret(): string {
+  return (
+    config.jwtSecret ||
+    config.googleClientSecret ||
+    'agrin_saarthi_super_secure_jwt_secret_dev_key_2026'
+  );
+}
+
+function cleanupConsumedStates(): void {
   const now = Date.now();
-  for (const [state, ts] of stateStore.entries()) {
+  for (const [s, ts] of consumedStates.entries()) {
     if (now - ts > STATE_TTL_MS) {
-      stateStore.delete(state);
+      consumedStates.delete(s);
     }
   }
-}, 5 * 60 * 1000);
+}
 
 export class GoogleOAuthService {
   /**
@@ -39,24 +57,78 @@ export class GoogleOAuthService {
   }
 
   /**
-   * Generate a cryptographically random state token and store it.
-   * The state is used to prevent CSRF on the OAuth callback.
+   * Generate a cryptographically signed state token.
+   * Format: `${nonce}.${timestamp}.${hmacSignature}`
+   * Works reliably across Vercel serverless instances and cold starts.
    */
   public static generateState(): string {
-    const state = crypto.randomBytes(32).toString('hex');
-    stateStore.set(state, Date.now());
-    return state;
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const timestamp = Date.now();
+    const payload = `${nonce}.${timestamp}`;
+    const secret = getOAuthStateSecret();
+    const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    return `${payload}.${hmac}`;
   }
 
   /**
    * Validate and consume a state token.
+   * Works across distributed/serverless environments via HMAC signature & TTL check.
    * Returns true if valid and not expired; false otherwise.
    */
   public static validateState(state: string): boolean {
-    const ts = stateStore.get(state);
-    if (!ts) return false;
-    stateStore.delete(state); // consume once
-    return Date.now() - ts < STATE_TTL_MS;
+    if (!state || typeof state !== 'string') {
+      return false;
+    }
+
+    // Opportunistically clean up consumed states if map grows
+    if (consumedStates.size > 200) {
+      cleanupConsumedStates();
+    }
+
+    // Check if this state was already consumed in this container instance
+    if (consumedStates.has(state)) {
+      console.warn('[Google OAuth] State token already consumed (replay detected).');
+      return false;
+    }
+
+    const parts = state.split('.');
+    if (parts.length === 3) {
+      const [nonce, tsStr, signature] = parts;
+      const timestamp = parseInt(tsStr, 10);
+      if (isNaN(timestamp)) {
+        console.warn('[Google OAuth] Invalid state timestamp format.');
+        return false;
+      }
+
+      const now = Date.now();
+      // Allow up to 60s future clock skew; reject if older than TTL
+      if (timestamp > now + 60 * 1000) {
+        console.warn('[Google OAuth] State timestamp is in the future.');
+        return false;
+      }
+      if (now - timestamp > STATE_TTL_MS) {
+        console.warn('[Google OAuth] State token expired.');
+        return false;
+      }
+
+      const payload = `${nonce}.${tsStr}`;
+      const secret = getOAuthStateSecret();
+      const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+
+      if (signature.length === expectedHmac.length) {
+        const sigBuf = Buffer.from(signature, 'hex');
+        const expBuf = Buffer.from(expectedHmac, 'hex');
+        if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+          consumedStates.set(state, Date.now());
+          return true;
+        }
+      }
+
+      console.warn('[Google OAuth] State HMAC signature mismatch.');
+      return false;
+    }
+
+    return false;
   }
 
   /**

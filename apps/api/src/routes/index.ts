@@ -361,6 +361,8 @@ apiRouter.get(
 // GET /api/auth/google
 apiRouter.get('/auth/google', (_req: Request, res: Response) => {
   console.log('[Google OAuth] /auth/google called');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
 
   if (!GoogleOAuthService.isConfigured()) {
     const frontendUrl = config.frontendUrl;
@@ -373,6 +375,9 @@ apiRouter.get('/auth/google', (_req: Request, res: Response) => {
 
 // GET /api/auth/google/callback
 apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+
   const frontendUrl = config.frontendUrl;
   const errorRedirect = (reason: string) =>
     res.redirect(`${frontendUrl}/login?google_error=${encodeURIComponent(reason)}`);
