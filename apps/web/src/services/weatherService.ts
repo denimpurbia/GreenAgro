@@ -84,8 +84,6 @@ export async function fetchWeather(
       cache: 'no-store',
       headers: {
         Accept: 'application/json',
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
       },
     });
 

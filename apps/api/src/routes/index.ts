@@ -676,7 +676,6 @@ apiRouter.get(
       'Cache-Control',
       'no-store, no-cache, must-revalidate, proxy-revalidate'
     );
-
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
@@ -694,15 +693,35 @@ apiRouter.get(
     try {
       const result = await SatelliteService.fetchNDVI(lat, lon);
 
-      return res
-        .status(result.status === 'error' ? 502 : 200)
-        .json(result);
-    } catch (error) {
+      // not_configured → 200 (frontend handles this state gracefully)
+      // error → 200 (provider-level errors are returned as structured JSON)
+      // success → 200
+      return res.status(200).json(result);
+    } catch (error: any) {
       console.error('[Satellite Route Error]:', error);
+
+      // If credentials are missing / not configured, return structured not_configured
+      const errMsg = error?.message || String(error);
+      const isCredentialsError =
+        errMsg.includes('credentials') ||
+        errMsg.includes('not found') ||
+        errMsg.includes('EARTH_ENGINE') ||
+        errMsg.includes('GOOGLE_APPLICATION');
+
+      if (isCredentialsError) {
+        return res.status(200).json({
+          status: 'not_configured',
+          message: errMsg,
+          configurationRequired: [
+            'Set EARTH_ENGINE_PROJECT to your Google Cloud Project ID.',
+            'Set EARTH_ENGINE_CREDENTIALS_JSON to the full service account JSON string (Vercel production).',
+          ],
+        });
+      }
 
       return res.status(500).json({
         status: 'error',
-        message: 'Satellite service failed.',
+        message: 'Satellite service encountered an unexpected error.',
         code: 'SATELLITE_SERVICE_ERROR',
       });
     }

@@ -72,8 +72,9 @@ export const SatellitePage: React.FC = () => {
             <p className="text-xs font-bold text-gray-700 mb-2">To enable live NDVI:</p>
             <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
               <li>Set <code className="bg-gray-100 px-1 rounded">SATELLITE_PROVIDER=earth-engine</code></li>
-              <li>Configure <code className="bg-gray-100 px-1 rounded">GOOGLE_APPLICATION_CREDENTIALS</code></li>
-              <li>Set <code className="bg-gray-100 px-1 rounded">EARTH_ENGINE_PROJECT</code> in your .env</li>
+              <li>Set <code className="bg-gray-100 px-1 rounded">EARTH_ENGINE_PROJECT</code> to your Google Cloud Project ID</li>
+              <li>Vercel/Production: Set <code className="bg-gray-100 px-1 rounded">EARTH_ENGINE_CREDENTIALS_JSON</code> to the full service-account JSON string</li>
+              <li>Local dev: Set <code className="bg-gray-100 px-1 rounded">GOOGLE_APPLICATION_CREDENTIALS</code> to the JSON file path</li>
             </ol>
           </div>
         </div>

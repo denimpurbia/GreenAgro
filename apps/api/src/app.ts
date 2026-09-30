@@ -14,6 +14,7 @@ const parseAllowedOrigins = (): string[] => {
     .filter(Boolean);
 
   const defaults = [
+    'https://green-agro-ruby.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
@@ -25,32 +26,43 @@ const parseAllowedOrigins = (): string[] => {
 
 const allowedOrigins = parseAllowedOrigins();
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (such as mobile apps, curl, serverless invocations, or health probes)
-      if (!origin) {
-        return callback(null, true);
-      }
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (such as mobile apps, curl, serverless invocations, or health probes)
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      const normalizedOrigin = origin.replace(/\/+$/, '');
-      const isVercelDomain = /^https:\/\/[a-z0-9_-]+\.vercel\.app$/i.test(normalizedOrigin);
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+    const isVercelDomain = /^https:\/\/[a-z0-9_-]+\.vercel\.app$/i.test(normalizedOrigin);
 
-      if (
-        allowedOrigins.includes(normalizedOrigin) ||
-        allowedOrigins.includes('*') ||
-        isVercelDomain
-      ) {
-        return callback(null, true);
-      } else {
-        return callback(new Error(`CORS origin not allowed: ${origin}`));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  })
-);
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      isVercelDomain
+    ) {
+      return callback(null, true);
+    } else {
+      console.warn(`[CORS] Origin rejected: ${origin}`);
+      return callback(null, false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Accept',
+    'Content-Type',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'X-Requested-With',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle OPTIONS preflight across all routes
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

@@ -51,21 +51,151 @@ export class EarthEngineSatelliteProvider
 
   /*
    * ============================================================
+   * SAFE CREDENTIALS PARSING & RESOLUTION
+   * ============================================================
+   */
+
+  /**
+   * Safely parses a service account credentials JSON string or object.
+   * Handles raw JSON, outer quotes, base64 strings, and escaped newlines.
+   */
+  public static parseCredentialsObject(raw: unknown): any | null {
+    if (!raw) return null;
+
+    if (typeof raw === 'object' && raw !== null) {
+      const obj = raw as Record<string, any>;
+      if (obj.client_email || obj.private_key || obj.type === 'service_account') {
+        return obj;
+      }
+    }
+
+    if (typeof raw !== 'string') return null;
+
+    let trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    // Strip wrapping quotes if accidentally surrounded by single or double quotes
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+
+    // Attempt 1: Direct JSON parse
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    } catch {
+      // Continue to next attempt
+    }
+
+    // Attempt 2: Base64-decoded string (common in Vercel to preserve newlines)
+    try {
+      const decoded = Buffer.from(trimmed, 'base64').toString('utf8').trim();
+      if (decoded.startsWith('{')) {
+        const parsed = JSON.parse(decoded);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch {
+      // Continue to next attempt
+    }
+
+    // Attempt 3: Newline unescape (handles literal "\n" in private_key)
+    try {
+      const unescaped = trimmed.replace(/\\n/g, '\n');
+      const parsed = JSON.parse(unescaped);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    } catch {
+      // Fall through
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolves service account credentials.
+   * Priority:
+   * 1. EARTH_ENGINE_CREDENTIALS_JSON (preferred in production / Vercel)
+   * 2. GOOGLE_APPLICATION_CREDENTIALS_JSON (alternative JSON env var)
+   * 3. GOOGLE_APPLICATION_CREDENTIALS (if it contains direct JSON string)
+   * 4. GOOGLE_APPLICATION_CREDENTIALS as local file path (for local development)
+   */
+  public resolveCredentials(): any | null {
+    // 1. Production: EARTH_ENGINE_CREDENTIALS_JSON
+    const eeJson = process.env.EARTH_ENGINE_CREDENTIALS_JSON;
+    if (eeJson && eeJson.trim()) {
+      const parsed = EarthEngineSatelliteProvider.parseCredentialsObject(eeJson);
+      if (parsed) return parsed;
+      console.warn('[Satellite] EARTH_ENGINE_CREDENTIALS_JSON could not be parsed as valid service account JSON.');
+    }
+
+    // 2. GOOGLE_APPLICATION_CREDENTIALS_JSON
+    const gacJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    if (gacJson && gacJson.trim()) {
+      const parsed = EarthEngineSatelliteProvider.parseCredentialsObject(gacJson);
+      if (parsed) return parsed;
+      console.warn('[Satellite] GOOGLE_APPLICATION_CREDENTIALS_JSON could not be parsed as valid JSON.');
+    }
+
+    // 3. GOOGLE_APPLICATION_CREDENTIALS
+    const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
+    if (!credentialsPath) {
+      return null;
+    }
+
+    // If GOOGLE_APPLICATION_CREDENTIALS itself contains raw JSON content
+    if (credentialsPath.startsWith('{')) {
+      const parsed = EarthEngineSatelliteProvider.parseCredentialsObject(credentialsPath);
+      if (parsed) return parsed;
+    }
+
+    // Check candidate file paths safely (local development)
+    const candidatePaths = [
+      path.resolve(process.cwd(), credentialsPath),
+      path.resolve(process.cwd(), 'apps/api', credentialsPath),
+      path.resolve(__dirname, '../../../../', credentialsPath),
+      path.resolve(__dirname, '../../../', credentialsPath),
+      path.resolve(__dirname, '../../', credentialsPath),
+    ];
+
+    for (const candidate of candidatePaths) {
+      try {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          const fileContent = fs.readFileSync(candidate, 'utf8');
+          const parsed = EarthEngineSatelliteProvider.parseCredentialsObject(fileContent);
+          if (parsed) {
+            return parsed;
+          }
+        }
+      } catch (err) {
+        console.warn(`[Satellite] Could not read credentials candidate ${candidate}:`, err);
+      }
+    }
+
+    return null;
+  }
+
+  /*
+   * ============================================================
    * CONFIGURATION
    * ============================================================
    */
 
   public isConfigured(): boolean {
-    const project =
-      process.env.EARTH_ENGINE_PROJECT || '';
+    const project = (process.env.EARTH_ENGINE_PROJECT || '').trim();
+    if (!project) {
+      return false;
+    }
 
-    const credentials =
-      process.env.GOOGLE_APPLICATION_CREDENTIALS || '';
-
-    return Boolean(
-      project.trim() &&
-        credentials.trim()
-    );
+    const credentials = this.resolveCredentials();
+    return Boolean(credentials);
   }
 
   /*
@@ -88,170 +218,61 @@ export class EarthEngineSatelliteProvider
    */
 
   private async initialize(): Promise<void> {
-    if (
-      EarthEngineSatelliteProvider.initialized
-    ) {
+    if (EarthEngineSatelliteProvider.initialized) {
       return;
     }
 
-    if (
-      EarthEngineSatelliteProvider.initPromise
-    ) {
+    if (EarthEngineSatelliteProvider.initPromise) {
       return EarthEngineSatelliteProvider.initPromise;
     }
 
-    const project =
-      process.env.EARTH_ENGINE_PROJECT || '';
+    const project = (process.env.EARTH_ENGINE_PROJECT || '').trim();
+    const privateKey = this.resolveCredentials();
 
-    const credentialsPath =
-      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-      '';
-
-    const rawJsonCreds =
-      process.env.EARTH_ENGINE_CREDENTIALS_JSON ||
-      process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ||
-      (credentialsPath.trim().startsWith('{') ? credentialsPath : '');
-
-    if (!project.trim()) {
+    if (!project) {
       throw new Error(
         'Earth Engine configuration is missing: EARTH_ENGINE_PROJECT is not set.'
       );
     }
 
-    if (!rawJsonCreds.trim() && !credentialsPath.trim()) {
+    if (!privateKey) {
       throw new Error(
-        'Earth Engine configuration is missing: Please set GOOGLE_APPLICATION_CREDENTIALS (file path) or EARTH_ENGINE_CREDENTIALS_JSON (JSON string).'
+        'Earth Engine configuration is missing: Valid credentials not found in EARTH_ENGINE_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS.'
       );
     }
 
-    let privateKey: any;
-
-    if (rawJsonCreds.trim()) {
-      try {
-        privateKey = JSON.parse(rawJsonCreds.trim());
-      } catch (err: any) {
-        throw new Error(
-          `Failed to parse Earth Engine JSON credentials: ${err?.message || err}`
+    EarthEngineSatelliteProvider.initPromise = new Promise<void>(
+      (resolve, reject) => {
+        ee.data.authenticateViaPrivateKey(
+          privateKey,
+          () => {
+            ee.initialize(
+              null,
+              null,
+              () => {
+                EarthEngineSatelliteProvider.initialized = true;
+                console.log(
+                  '[Satellite] Google Earth Engine initialized successfully.'
+                );
+                resolve();
+              },
+              (error: unknown) => {
+                EarthEngineSatelliteProvider.initPromise = null;
+                console.error('[Satellite] ee.initialize failed:', error);
+                reject(error);
+              },
+              null,
+              project
+            );
+          },
+          (error: unknown) => {
+            EarthEngineSatelliteProvider.initPromise = null;
+            console.error('[Satellite] ee.data.authenticateViaPrivateKey failed:', error);
+            reject(error);
+          }
         );
       }
-    } else {
-      const candidatePaths = [
-        path.resolve(
-          process.cwd(),
-          credentialsPath
-        ),
-
-        path.resolve(
-          process.cwd(),
-          'apps/api',
-          credentialsPath
-        ),
-
-        path.resolve(
-          __dirname,
-          '../../../../',
-          credentialsPath
-        ),
-
-        path.resolve(
-          __dirname,
-          '../../../',
-          credentialsPath
-        ),
-
-        path.resolve(
-          __dirname,
-          '../../',
-          credentialsPath
-        ),
-      ];
-
-      let resolvedCredentialsPath =
-        '';
-
-      for (
-        const candidate of candidatePaths
-      ) {
-        if (
-          fs.existsSync(candidate)
-        ) {
-          resolvedCredentialsPath =
-            candidate;
-
-          break;
-        }
-      }
-
-      if (
-        !resolvedCredentialsPath
-      ) {
-        throw new Error(
-          `Earth Engine credentials file not found. Checked: ${candidatePaths.join(
-            ', '
-          )}`
-        );
-      }
-
-      privateKey =
-        JSON.parse(
-          fs.readFileSync(
-            resolvedCredentialsPath,
-            'utf8'
-          )
-        );
-    }
-
-    EarthEngineSatelliteProvider.initPromise =
-      new Promise<void>(
-        (
-          resolve,
-          reject
-        ) => {
-          ee.data.authenticateViaPrivateKey(
-            privateKey,
-
-            () => {
-              ee.initialize(
-                null,
-                null,
-
-                () => {
-                  EarthEngineSatelliteProvider.initialized =
-                    true;
-
-                  console.log(
-                    '[Satellite] Google Earth Engine initialized successfully.'
-                  );
-
-                  resolve();
-                },
-
-                (
-                  error: unknown
-                ) => {
-                  EarthEngineSatelliteProvider.initPromise =
-                    null;
-
-                  reject(error);
-                },
-
-                null,
-
-                project
-              );
-            },
-
-            (
-              error: unknown
-            ) => {
-              EarthEngineSatelliteProvider.initPromise =
-                null;
-
-              reject(error);
-            }
-          );
-        }
-      );
+    );
 
     return EarthEngineSatelliteProvider.initPromise;
   }
@@ -309,16 +330,13 @@ export class EarthEngineSatelliteProvider
 
     if (!this.isConfigured()) {
       return {
-        status:
-          'not_configured',
-
+        status: 'not_configured',
         message:
-          'Google Earth Engine is selected as the satellite provider, but credentials are incomplete in .env.',
-
+          'Google Earth Engine is selected as the satellite provider, but credentials are not configured.',
         configurationRequired: [
-          'Ensure EARTH_ENGINE_PROJECT is set.',
-
-          'Ensure GOOGLE_APPLICATION_CREDENTIALS points to the service account JSON file.',
+          'Set EARTH_ENGINE_PROJECT to your Google Cloud Project ID.',
+          'Set EARTH_ENGINE_CREDENTIALS_JSON to the full service account JSON string (production/Vercel).',
+          'Or set GOOGLE_APPLICATION_CREDENTIALS to a local file path (local development only).',
         ],
       };
     }
