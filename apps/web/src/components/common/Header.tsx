@@ -12,6 +12,16 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
   const navigate = useNavigate();
   const { language, setLanguage, user, logout, isAuthenticated } = useApp();
 
+  const avatarSrc =
+    (user?.avatarUrl && user.avatarUrl !== '/images/farmer-hero.jpg'
+      ? user.avatarUrl
+      : null) ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('agrin_profile_photo')
+      : null) ||
+    user?.avatarUrl ||
+    '/images/farmer-hero.jpg';
+
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e8ece8] px-3 sm:px-4 md:px-8 py-2 sm:py-3.5 flex items-center justify-between transition-all">
       {/* Mobile brand & toggle */}
@@ -77,11 +87,14 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
             >
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-agri-200 border border-agri-300 shrink-0">
                 <img
-                  src="/images/farmer-hero.jpg"
+                  src={avatarSrc}
                   alt={user?.name ?? 'User'}
                   className="w-full h-full object-cover object-top"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = user?.avatarUrl || '';
+                    const target = e.currentTarget;
+                    if (!target.src.endsWith('/images/farmer-hero.jpg')) {
+                      target.src = '/images/farmer-hero.jpg';
+                    }
                   }}
                 />
               </div>

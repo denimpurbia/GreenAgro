@@ -658,6 +658,15 @@ export const AppProvider: React.FC<{
           if (!isMounted) return;
 
           if (freshUser?.id) {
+            if (
+              freshUser.avatarUrl &&
+              freshUser.avatarUrl !== '/images/farmer-hero.jpg'
+            ) {
+              localStorage.setItem(
+                'agrin_profile_photo',
+                freshUser.avatarUrl
+              );
+            }
             setUser(freshUser);
             setIsAuthenticated(true);
           } else if (!savedUser?.id) {
@@ -837,6 +846,18 @@ export const AppProvider: React.FC<{
       rememberMe
     );
 
+    if (
+      authenticatedUser.avatarUrl &&
+      authenticatedUser.avatarUrl !== '/images/farmer-hero.jpg'
+    ) {
+      localStorage.setItem(
+        'agrin_profile_photo',
+        authenticatedUser.avatarUrl
+      );
+    } else {
+      localStorage.removeItem('agrin_profile_photo');
+    }
+
     setUser(
       authenticatedUser
     );
@@ -957,6 +978,9 @@ export const AppProvider: React.FC<{
 
     localStorage.removeItem(
       'agrin_farm_data'
+    );
+    localStorage.removeItem(
+      'agrin_profile_photo'
     );
 
     setUser(null);

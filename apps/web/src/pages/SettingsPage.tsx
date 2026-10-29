@@ -84,6 +84,10 @@ const handleSave = async (e: React.FormEvent) => {
       JSON.stringify(data.user)
     );
 
+    if (data.user.avatarUrl) {
+      localStorage.setItem('agrin_profile_photo', data.user.avatarUrl);
+    }
+
     setSavedSuccess(true);
 
     setTimeout(() => {
@@ -254,6 +258,12 @@ const handleSave = async (e: React.FormEvent) => {
                   src={profilePhoto}
                   alt={user?.name ?? 'User'}
                   className="w-full h-full object-cover object-top"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.endsWith('/images/farmer-hero.jpg')) {
+                      target.src = '/images/farmer-hero.jpg';
+                    }
+                  }}
                 />
               </div>
 
