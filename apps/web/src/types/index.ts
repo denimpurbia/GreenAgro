@@ -192,4 +192,5 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   language?: 'en' | 'hi';
+  imageUrl?: string;
 }

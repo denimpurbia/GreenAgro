@@ -61,7 +61,9 @@ export class GeminiService {
   public static async generateAdvisory(
     context: AdvisoryContext,
     prompt: string,
-    language: 'en' | 'hi' = 'en'
+    language: 'en' | 'hi' = 'en',
+    imageBase64?: string,
+    imageMimeType?: string
   ): Promise<string> {
     const client = this.getClient();
     if (!client) {
@@ -89,7 +91,7 @@ Farm Context:
 - ${ndviInfo}
 - Today's Weather: ${weatherInfo} (Rain probability: ${rainInfo})
 ${locationInfo ? `- ${locationInfo}` : ''}
-
+${imageBase64 && imageMimeType ? '- The user has also attached an image for visual reference. Analyze it carefully and incorporate observations into your response.' : ''}
 CRITICAL LANGUAGE & COMMUNICATION RULES:
 1. GreenAgro is designed primarily for Indian farmers. ALWAYS prioritize easy-to-understand Hindi / Hinglish responses by default.
 2. If the user asks a question in Hindi, respond in Hindi / Hinglish.
@@ -115,7 +117,21 @@ FEW-SHOT EXAMPLES FOR LANGUAGE BEHAVIOR:
 - User explicitly asks for English: "Answer this in English."
   Assistant responds in English: "To improve nitrogen in your soil naturally, you can incorporate well-decomposed compost or farmyard manure..."`;
 
-      const result = await model.generateContent([systemPrompt, prompt]);
+      const parts: any[] = [systemPrompt, prompt];
+
+      if (imageBase64 && imageMimeType) {
+        const cleanBase64 = imageBase64
+          .replace(/^data:image\/[a-z+]+;base64,/i, '')
+          .trim();
+        parts.push({
+          inlineData: {
+            mimeType: imageMimeType as any,
+            data: cleanBase64,
+          },
+        });
+      }
+
+      const result = await model.generateContent(parts);
       const response = await result.response;
       return response.text();
     } catch (err: any) {

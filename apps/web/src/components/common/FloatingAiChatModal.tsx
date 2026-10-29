@@ -8,6 +8,8 @@ import {
   Sparkles,
   Loader2,
   ShieldCheck,
+  Paperclip,
+  Camera,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -37,6 +39,15 @@ export const FloatingAiChatModal: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const [attachedImage, setAttachedImage] = useState<{
+    file: File;
+    base64: string;
+    mimeType: string;
+    previewUrl: string;
+  } | null>(null);
 
   // Strict authentication check
   const isGenuinelyAuthenticated = Boolean(
@@ -491,7 +502,7 @@ export const FloatingAiChatModal: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!inputText.trim() || isAiLoading) return;
+    if ((!inputText.trim() && !attachedImage) || isAiLoading) return;
 
     if (!isGenuinelyAuthenticated) {
       setIsAiChatOpen(true);
@@ -510,10 +521,86 @@ export const FloatingAiChatModal: React.FC = () => {
       setIsListening(false);
     }
 
-    sendChatMessage(inputText.trim());
+    const msgText =
+      inputText.trim() ||
+      (language === 'hi' ? '[छवि संलग्न]' : '[Image attached]');
+
+    sendChatMessage(
+      msgText,
+      attachedImage
+        ? {
+            base64: attachedImage.base64,
+            mimeType: attachedImage.mimeType,
+            previewUrl: attachedImage.previewUrl,
+          }
+        : undefined
+    );
 
     setInputText('');
+    if (attachedImage?.previewUrl) {
+      URL.revokeObjectURL(attachedImage.previewUrl);
+    }
+    setAttachedImage(null);
   };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 📎 IMAGE ATTACH HANDLERS
+  // ═══════════════════════════════════════════════════════════════════
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert(
+        language === 'hi'
+          ? 'कृपया एक वैध image file चुनें।'
+          : 'Please select a valid image file.'
+      );
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(
+        language === 'hi'
+          ? 'Image 5MB से बड़ी नहीं होनी चाहिए।'
+          : 'Image must be less than 5MB.'
+      );
+      e.target.value = '';
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedImage({
+        file,
+        base64: reader.result as string,
+        mimeType: file.type,
+        previewUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = () => {
+    if (attachedImage?.previewUrl) {
+      URL.revokeObjectURL(attachedImage.previewUrl);
+    }
+    setAttachedImage(null);
+  };
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (attachedImage?.previewUrl) {
+        URL.revokeObjectURL(attachedImage.previewUrl);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const quickPrompts = [
     language === 'hi'
@@ -616,6 +703,16 @@ export const FloatingAiChatModal: React.FC = () => {
                     : 'bg-white border border-[#e5e9e5] text-gray-800 rounded-bl-xs shadow-xs'
                 }`}
               >
+                {msg.imageUrl && (
+                  <img
+                    src={msg.imageUrl}
+                    alt="Attached"
+                    className="max-w-[200px] w-full rounded-xl border border-white/20 mb-1.5 object-contain block"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
                 {msg.text}
               </div>
 
@@ -656,6 +753,30 @@ export const FloatingAiChatModal: React.FC = () => {
           ))}
         </div>
 
+        {/* Image Preview Strip */}
+        {attachedImage && (
+          <div className="px-3 pb-2 bg-white flex items-center gap-2 shrink-0 border-t border-gray-100 pt-2">
+            <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-agri-200 shrink-0">
+              <img
+                src={attachedImage.previewUrl}
+                alt="Attached preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span className="text-[11px] text-gray-500 flex-1 truncate">
+              {attachedImage.file.name}
+            </span>
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+              aria-label="Remove image"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Input Bar */}
         <form
           onSubmit={handleSubmit}
@@ -665,6 +786,47 @@ export const FloatingAiChatModal: React.FC = () => {
               'max(0.625rem, env(safe-area-inset-bottom, 0px))',
           }}
         >
+          {/* Hidden file inputs */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+
+          {/* 📎 UPLOAD IMAGE BUTTON */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isAiLoading}
+            className="p-2 rounded-xl text-gray-400 hover:text-agri-700 hover:bg-gray-100 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+            title={language === 'hi' ? 'छवि अपलोड करें' : 'Upload image'}
+            aria-label="Upload image"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+
+          {/* 📷 CAMERA BUTTON */}
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={isAiLoading}
+            className="p-2 rounded-xl text-gray-400 hover:text-agri-700 hover:bg-gray-100 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+            title={language === 'hi' ? 'कैमरा से फ़ोटो लें' : 'Take photo'}
+            aria-label="Take photo"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+
           <input
             ref={inputRef}
             type="text"
@@ -718,7 +880,7 @@ export const FloatingAiChatModal: React.FC = () => {
           {/* SEND BUTTON */}
           <button
             type="submit"
-            disabled={!inputText.trim() || isAiLoading}
+            disabled={(!inputText.trim() && !attachedImage) || isAiLoading}
             className="p-2 bg-agri-700 hover:bg-agri-800 disabled:opacity-50 text-white rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
             aria-label="Send message"
           >

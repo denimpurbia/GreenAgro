@@ -1239,9 +1239,11 @@ apiRouter.post(
       message = '',
       language = 'en',
       farmContext,
+      imageBase64,
+      imageMimeType,
     } = req.body;
 
-    if (!message.trim()) {
+    if (!message.trim() && !imageBase64) {
       return res.status(400).json({
         status: 'error',
         message: 'message field is required.',
@@ -1266,7 +1268,9 @@ apiRouter.post(
         await GeminiService.generateAdvisory(
           farmContext,
           message,
-          language
+          language,
+          typeof imageBase64 === 'string' ? imageBase64 : undefined,
+          typeof imageMimeType === 'string' ? imageMimeType : undefined
         );
 
       if (isConnectedToDb) {

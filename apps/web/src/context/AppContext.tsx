@@ -191,7 +191,8 @@ interface AppContextType {
   chatMessages: ChatMessage[];
 
   sendChatMessage: (
-    text: string
+    text: string,
+    imageData?: { base64: string; mimeType: string; previewUrl?: string }
   ) => Promise<void>;
 
   isAiChatOpen: boolean;
@@ -2065,7 +2066,8 @@ try {
 
   const sendChatMessage =
     async (
-      text: string
+      text: string,
+      imageData?: { base64: string; mimeType: string; previewUrl?: string }
     ) => {
       if (
         !isAuthenticated ||
@@ -2120,6 +2122,10 @@ try {
                   '2-digit',
               }
             ),
+
+          ...(imageData?.previewUrl
+            ? { imageUrl: imageData.previewUrl }
+            : {}),
         };
 
       setChatMessages(
@@ -2153,6 +2159,13 @@ try {
                   text,
 
                 language,
+
+                ...(imageData
+                  ? {
+                      imageBase64: imageData.base64,
+                      imageMimeType: imageData.mimeType,
+                    }
+                  : {}),
 
                 farmContext: {
                   farmId:
