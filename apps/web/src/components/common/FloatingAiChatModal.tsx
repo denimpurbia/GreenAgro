@@ -41,6 +41,8 @@ export const FloatingAiChatModal: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [attachedImage, setAttachedImage] = useState<{
     file: File;
@@ -48,6 +50,9 @@ export const FloatingAiChatModal: React.FC = () => {
     mimeType: string;
     previewUrl: string;
   } | null>(null);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Strict authentication check
   const isGenuinelyAuthenticated = Boolean(
@@ -259,11 +264,16 @@ export const FloatingAiChatModal: React.FC = () => {
     }
   }, [isGenuinelyAuthenticated]);
 
-  // Cleanup object URLs on unmount — MUST be before any early return
+  // Cleanup object URLs and camera stream on unmount — MUST be before any early return
   useEffect(() => {
     return () => {
       if (attachedImage?.previewUrl) {
         URL.revokeObjectURL(attachedImage.previewUrl);
+      }
+      // Stop camera if open
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -602,6 +612,109 @@ export const FloatingAiChatModal: React.FC = () => {
     setAttachedImage(null);
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // 📷 CAMERA HANDLERS (getUserMedia)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const stopCameraStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const openCamera = async () => {
+    // On mobile, prefer the native file capture input (simpler UX)
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    // Desktop: use getUserMedia for in-browser camera
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(
+        language === 'hi'
+          ? 'आपका browser camera access support नहीं करता।'
+          : 'Your browser does not support camera access.'
+      );
+      setIsCameraOpen(true);
+      return;
+    }
+
+    setCameraError(null);
+    setIsCameraOpen(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      // Attach stream to video element after it mounts
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 50);
+    } catch (err: any) {
+      const denied =
+        err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError';
+      setCameraError(
+        denied
+          ? language === 'hi'
+            ? 'Camera permission allow करें और फिर दोबारा try करें।'
+            : 'Camera permission denied. Please allow access and try again.'
+          : language === 'hi'
+            ? 'Camera open करने में समस्या हुई। पुनः प्रयास करें।'
+            : 'Could not open camera. Please try again.'
+      );
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !streamRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const fileName = `camera-${Date.now()}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        const previewUrl = URL.createObjectURL(blob);
+        const reader = new FileReader();
+        reader.onload = () => {
+          setAttachedImage({
+            file,
+            base64: reader.result as string,
+            mimeType: 'image/jpeg',
+            previewUrl,
+          });
+          stopCameraStream();
+          setIsCameraOpen(false);
+          setCameraError(null);
+        };
+        reader.readAsDataURL(file);
+      },
+      'image/jpeg',
+      0.92
+    );
+  };
+
+  const closeCamera = () => {
+    stopCameraStream();
+    setIsCameraOpen(false);
+    setCameraError(null);
+  };
+
   const quickPrompts = [
     language === 'hi'
       ? 'आज सिंचाई करनी चाहिए?'
@@ -684,6 +797,72 @@ export const FloatingAiChatModal: React.FC = () => {
             Gemini
           </span>
         </div>
+
+        {/* ── Camera Overlay (desktop getUserMedia) ── */}
+        {isCameraOpen && (
+          <div className="absolute inset-0 z-20 bg-black flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden">
+            {cameraError ? (
+              // Error state
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <Camera className="w-10 h-10 text-white/50" />
+                <p className="text-sm text-white/80">{cameraError}</p>
+                <button
+                  type="button"
+                  onClick={closeCamera}
+                  className="mt-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors cursor-pointer"
+                >
+                  {language === 'hi' ? 'बंद करें' : 'Close'}
+                </button>
+              </div>
+            ) : (
+              // Live camera view
+              <>
+                <div className="flex items-center justify-between px-3 py-2 shrink-0">
+                  <span className="text-xs text-white/70">
+                    {language === 'hi' ? 'फ़ोटो लें' : 'Take a photo'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={closeCamera}
+                    className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                    aria-label="Close camera"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 min-h-0 relative bg-black">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="shrink-0 flex items-center justify-center gap-4 py-3 px-4">
+                  <button
+                    type="button"
+                    onClick={closeCamera}
+                    className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    {language === 'hi' ? 'रद्द करें' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="w-12 h-12 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-lg transition-colors cursor-pointer shrink-0"
+                    aria-label="Capture photo"
+                  >
+                    <div className="w-9 h-9 rounded-full border-2 border-agri-700 bg-agri-50" />
+                  </button>
+                  <div className="w-[72px]" />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Message Stream */}
         <div className="flex-1 min-h-0 p-3.5 sm:p-4 overflow-y-auto overscroll-contain space-y-3 bg-[#fafbfa]">
@@ -818,7 +997,7 @@ export const FloatingAiChatModal: React.FC = () => {
           {/* 📷 CAMERA BUTTON */}
           <button
             type="button"
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={openCamera}
             disabled={isAiLoading}
             className="p-2 rounded-xl text-gray-400 hover:text-agri-700 hover:bg-gray-100 transition-all shrink-0 cursor-pointer disabled:opacity-50"
             title={language === 'hi' ? 'कैमरा से फ़ोटो लें' : 'Take photo'}
