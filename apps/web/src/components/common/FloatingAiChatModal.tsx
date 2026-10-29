@@ -192,11 +192,6 @@ export const FloatingAiChatModal: React.FC = () => {
         handleViewportChange
       );
 
-      window.visualViewport.addEventListener(
-        'scroll',
-        handleViewportChange
-      );
-
       handleViewportChange();
     }
 
@@ -206,40 +201,9 @@ export const FloatingAiChatModal: React.FC = () => {
           'resize',
           handleViewportChange
         );
-
-        window.visualViewport.removeEventListener(
-          'scroll',
-          handleViewportChange
-        );
       }
     };
   }, [isAiChatOpen]);
-
-  // ═══════════════════════════════════════════════════════════════════
-  // LOCK BACKGROUND SCROLL ON MOBILE
-  // ═══════════════════════════════════════════════════════════════════
-
-  useEffect(() => {
-    if (!isAiChatOpen) return;
-
-    const isMobile = window.innerWidth < 768;
-
-    if (!isMobile) return;
-
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevDocOverflow = document.documentElement.style.overflow;
-    const prevBodyTouchAction = document.body.style.touchAction;
-
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevDocOverflow;
-      document.body.style.touchAction = prevBodyTouchAction;
-    };
-  }, [isAiChatOpen, location.pathname]);
 
   // ═══════════════════════════════════════════════════════════════════
   // ESC KEY
@@ -340,8 +304,8 @@ export const FloatingAiChatModal: React.FC = () => {
     viewportHeight && window.innerWidth < 768
       ? {
           maxHeight: `${Math.min(
-            580,
-            viewportHeight - 32
+            540,
+            viewportHeight - 80
           )}px`,
         }
       : undefined;
@@ -353,21 +317,11 @@ export const FloatingAiChatModal: React.FC = () => {
   if (isAuthLoading) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-5 bg-black/45 backdrop-blur-xs md:bg-transparent md:backdrop-blur-none md:p-0 md:inset-auto md:right-6 md:bottom-6 md:w-[390px] md:block pointer-events-auto transition-all"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setIsAiChatOpen(false);
-          }
-        }}
-        style={{ touchAction: 'none' }}
+        className="fixed z-50 right-2 sm:right-4 md:right-6 bottom-[70px] sm:bottom-20 md:bottom-6 w-[calc(100vw-1rem)] sm:w-[390px] max-w-[400px] pointer-events-auto transition-all"
       >
         <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            touchAction: 'auto',
-            ...mobileHeightStyle,
-          }}
-          className="relative w-full max-w-[400px] md:max-w-none md:w-[390px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 duration-200"
+          style={mobileHeightStyle}
+          className="relative w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 duration-200"
         >
           <div className="bg-gradient-to-r from-agri-800 to-agri-700 text-white p-3.5 sm:p-4 flex items-center justify-between shadow-sm shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -430,21 +384,11 @@ export const FloatingAiChatModal: React.FC = () => {
   if (!isGenuinelyAuthenticated) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-5 bg-black/45 backdrop-blur-xs md:bg-transparent md:backdrop-blur-none md:p-0 md:inset-auto md:right-6 md:bottom-6 md:w-[390px] md:block pointer-events-auto transition-all"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setIsAiChatOpen(false);
-          }
-        }}
-        style={{ touchAction: 'none' }}
+        className="fixed z-50 right-2 sm:right-4 md:right-6 bottom-[70px] sm:bottom-20 md:bottom-6 w-[calc(100vw-1rem)] sm:w-[390px] max-w-[400px] pointer-events-auto transition-all"
       >
         <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            touchAction: 'auto',
-            ...mobileHeightStyle,
-          }}
-          className="relative w-full max-w-[400px] md:max-w-none md:w-[390px] max-h-[min(560px,calc(100dvh-5rem))] md:max-h-none bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 slide-in-from-bottom-3 duration-200"
+          style={mobileHeightStyle}
+          className="relative w-full max-h-[min(560px,calc(100dvh-5.5rem))] md:max-h-none bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 slide-in-from-bottom-3 duration-200"
         >
           <div className="bg-gradient-to-r from-agri-800 to-agri-700 text-white p-3.5 sm:p-4 flex items-center justify-between shadow-sm shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -587,21 +531,11 @@ export const FloatingAiChatModal: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-5 bg-black/45 backdrop-blur-xs md:bg-transparent md:backdrop-blur-none md:p-0 md:inset-auto md:right-6 md:bottom-6 md:w-[410px] md:h-[540px] md:block pointer-events-auto transition-all"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          setIsAiChatOpen(false);
-        }
-      }}
-      style={{ touchAction: 'none' }}
+      className="fixed z-50 right-2 sm:right-4 md:right-6 bottom-[70px] sm:bottom-20 md:bottom-6 w-[calc(100vw-1rem)] sm:w-[390px] md:w-[410px] max-w-[420px] pointer-events-auto transition-all"
     >
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          touchAction: 'auto',
-          ...mobileHeightStyle,
-        }}
-        className="relative w-full max-w-[420px] md:max-w-none md:w-[410px] h-[min(580px,calc(100dvh-5rem))] md:h-[540px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 slide-in-from-bottom-3 duration-200"
+        style={mobileHeightStyle}
+        className="relative w-full h-[min(540px,calc(100dvh-5.5rem))] sm:h-[min(580px,calc(100dvh-6rem))] md:h-[540px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8ece8] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 md:zoom-in-100 slide-in-from-bottom-3 duration-200"
       >
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-agri-800 to-agri-700 text-white p-3.5 sm:p-4 flex items-center justify-between shadow-sm shrink-0">

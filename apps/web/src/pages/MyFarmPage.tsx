@@ -844,7 +844,7 @@ export const MyFarmPage: React.FC = () => {
             ================================================= */}
 
             <div
-              className="relative w-full h-[420px] sm:h-[500px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner"
+              className="relative isolate z-0 w-full h-[420px] sm:h-[500px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner"
             >
 
               {currentFarm.latitude &&
