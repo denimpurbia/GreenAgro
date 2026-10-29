@@ -259,6 +259,16 @@ export const FloatingAiChatModal: React.FC = () => {
     }
   }, [isGenuinelyAuthenticated]);
 
+  // Cleanup object URLs on unmount — MUST be before any early return
+  useEffect(() => {
+    return () => {
+      if (attachedImage?.previewUrl) {
+        URL.revokeObjectURL(attachedImage.previewUrl);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!isAiChatOpen) return null;
 
   // ═══════════════════════════════════════════════════════════════════
@@ -591,16 +601,6 @@ export const FloatingAiChatModal: React.FC = () => {
     }
     setAttachedImage(null);
   };
-
-  // Cleanup object URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (attachedImage?.previewUrl) {
-        URL.revokeObjectURL(attachedImage.previewUrl);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const quickPrompts = [
     language === 'hi'
