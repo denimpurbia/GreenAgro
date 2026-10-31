@@ -31,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isHi = language === 'hi';
+  const isGovt = authService.isGovtOrg(user);
 
   const avatarSrc =
     (user?.avatarUrl && user.avatarUrl !== '/images/farmer-hero.jpg'
@@ -286,15 +287,32 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
               </div>
 
               {/* Dropdown Footer */}
-              <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
-                <Link
-                  to="/app/alerts"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-agri-800 hover:text-agri-950 transition-colors py-1 px-3 w-full"
-                >
-                  <span>{isHi ? 'सभी अलर्ट देखें' : 'View All Alerts'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+              <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
+                {isGovt ? (
+                  <Link
+                    to="/app/alerts"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-agri-800 hover:text-agri-950 transition-colors py-1 px-3 w-full"
+                  >
+                    <span>{isHi ? 'अलर्ट प्रबंधन व प्रसारण' : 'Manage & Broadcast Alerts'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <div className="flex items-center justify-between w-full px-2 text-[11px] text-gray-500 font-medium">
+                    <span className="flex items-center gap-1.5 text-agri-800 font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      {isHi ? 'मौसम व सुपर एडमिन अलर्ट लाइव सक्रिय' : 'Weather & admin alerts live'}
+                    </span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-agri-800 hover:underline font-bold cursor-pointer"
+                      >
+                        {isHi ? 'सब पढ़ें' : 'Mark all read'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

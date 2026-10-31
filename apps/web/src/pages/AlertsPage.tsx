@@ -25,7 +25,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 export const AlertsPage: React.FC = () => {
   const { language, user } = useApp();
   const isHi = language === 'hi';
-  const isGovt = authService.isGovtOrg(user) || Boolean(user?.isSuperAdmin) || (user as any)?.role === 'admin';
+  const isGovt = authService.isGovtOrg(user);
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [, setLoading] = useState(true);
