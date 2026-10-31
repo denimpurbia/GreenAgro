@@ -1053,10 +1053,10 @@ export const AppProvider: React.FC<{
           }
         }
 
-        const numericLat =
+        let numericLat =
           Number(lat);
 
-        const numericLon =
+        let numericLon =
           Number(lon);
 
         const hasValidCoords =
@@ -1072,14 +1072,9 @@ export const AppProvider: React.FC<{
         if (
           !hasValidCoords
         ) {
-          setWeather(null);
-          setWeatherLoading(false);
-
-          setWeatherError(
-            'Add your farm location to view local weather.'
-          );
-
-          return;
+          numericLat = 24.5854;
+          numericLon = 73.7125;
+          locationName = locationName || 'Udaipur, Rajasthan, India';
         }
 
         // Unique request key for current location
@@ -1211,13 +1206,12 @@ export const AppProvider: React.FC<{
 
     const fetchSatellite =
       async () => {
-        const lat =
+        let lat =
           farm?.latitude;
 
-        const lon =
+        let lon =
           farm?.longitude;
 
-        // No farm coordinates
         if (
           lat === undefined ||
           lon === undefined ||
@@ -1230,13 +1224,18 @@ export const AppProvider: React.FC<{
           (Number(lat) === 0 &&
             Number(lon) === 0)
         ) {
-          if (!cancelled) {
-            setSatellite(
-              NULL_SATELLITE
-            );
+          const cachedLoc = getCachedLocation();
+          if (
+            cachedLoc?.status === 'success' &&
+            cachedLoc.latitude &&
+            cachedLoc.longitude
+          ) {
+            lat = cachedLoc.latitude;
+            lon = cachedLoc.longitude;
+          } else {
+            lat = 24.5854;
+            lon = 73.7125;
           }
-
-          return;
         }
 
         const numericLat =

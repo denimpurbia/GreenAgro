@@ -649,9 +649,43 @@ apiRouter.get(
   requireAuth,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const farm = await UserFarmService.getFarmByOwnerId(
+      let farm = await UserFarmService.getFarmByOwnerId(
         req.user!.id
       );
+
+      if (!farm) {
+        farm = await UserFarmService.createFarm(req.user!.id, {
+          name: 'GreenAgro Farm (Udaipur)',
+          locationName: 'Udaipur, Rajasthan, India',
+          state: 'Rajasthan',
+          country: 'India',
+          latitude: 24.5854,
+          longitude: 73.7125,
+          areaAcres: 4.5,
+          primaryCrop: 'Wheat',
+          cropVariety: 'Raj-4079',
+          soilType: 'Loamy',
+          irrigationMethod: 'Drip',
+        });
+      } else if (
+        !farm.latitude ||
+        !farm.longitude ||
+        (Number(farm.latitude) === 0 && Number(farm.longitude) === 0)
+      ) {
+        const updated = await UserFarmService.updateFarm(req.user!.id, {
+          latitude: 24.5854,
+          longitude: 73.7125,
+          locationName: farm.locationName || 'Udaipur, Rajasthan, India',
+          state: farm.state || 'Rajasthan',
+          country: farm.country || 'India',
+          primaryCrop: farm.primaryCrop || 'Wheat',
+          soilType: farm.soilType || 'Loamy',
+          irrigationMethod: farm.irrigationMethod || 'Drip',
+        });
+        if (updated) {
+          farm = updated;
+        }
+      }
 
       return res.json({
         status: 'success',
@@ -960,10 +994,32 @@ apiRouter.get(
         });
       }
 
-      const observation =
+      let observation =
         await SoilObservationModel.findOne({
           userId: req.user!.id,
         }).sort({ createdAt: -1 });
+
+      if (!observation) {
+        const baselineInputs = {
+          ph: 7.1,
+          nitrogen: 245,
+          phosphorus: 22,
+          potassium: 210,
+          organicCarbon: 0.68,
+        };
+        const calc = SoilEngine.calculate(baselineInputs);
+        observation = await SoilObservationModel.create({
+          userId: req.user!.id,
+          farmId: '',
+          ...baselineInputs,
+          score: calc.score,
+          rating: calc.rating,
+          nutrients: calc.nutrients,
+          limitingFactor: calc.limitingFactor,
+          aiInsight: calc.aiInsight,
+          recommendations: calc.recommendations,
+        });
+      }
 
       return res.json({
         status: 'success',
