@@ -821,7 +821,7 @@ export const FloatingAiChatModal: React.FC = () => {
                 onClick={handleStopVoice}
                 className="px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-[10px] font-bold cursor-pointer"
               >
-                Cancel
+                {chatLanguage === 'en' ? 'Cancel' : 'रद्द करें'}
               </button>
               <button
                 type="button"
@@ -829,7 +829,7 @@ export const FloatingAiChatModal: React.FC = () => {
                 disabled={!inputText.trim()}
                 className="px-2.5 py-1 rounded-lg bg-[#156637] hover:bg-[#104e2a] text-white text-[10px] font-bold disabled:opacity-40 cursor-pointer shadow-xs"
               >
-                Send Voice
+                {chatLanguage === 'en' ? 'Send Voice' : 'आवाज़ भेजें'}
               </button>
             </div>
           </div>
@@ -855,7 +855,7 @@ export const FloatingAiChatModal: React.FC = () => {
               onClick={stopTtsSpeech}
               className="text-[10px] font-bold bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded cursor-pointer"
             >
-              ⏹️ Stop Audio
+              {chatLanguage === 'en' ? '⏹️ Stop Audio' : '⏹️ आवाज़ रोकें'}
             </button>
           </div>
         )}

@@ -12,7 +12,8 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const SatellitePage: React.FC = () => {
-  const { t, satellite } = useApp();
+  const { t, satellite, language } = useApp();
+  const isHi = language === 'hi';
   const [zoomLevel, setZoomLevel] = useState(1);
   const [timeframe, setTimeframe] = useState('Last 3 Months');
 
@@ -27,7 +28,12 @@ export const SatellitePage: React.FC = () => {
     const first = chartData[0].value;
     const last = chartData[chartData.length - 1].value;
     const pct = Math.round(((last - first) / Math.max(first, 0.01)) * 100);
-    return { pct, label: pct >= 0 ? `+${pct}% Growth` : `${pct}% Decline` };
+    return {
+      pct,
+      label: isHi
+        ? (pct >= 0 ? `+${pct}% वृद्धि` : `${pct}% कमी`)
+        : (pct >= 0 ? `+${pct}% Growth` : `${pct}% Decline`),
+    };
   })();
 
   return (
@@ -48,9 +54,9 @@ export const SatellitePage: React.FC = () => {
             onChange={(e) => setTimeframe(e.target.value)}
             className="appearance-none bg-white border border-gray-200/80 rounded-xl px-4 py-2 pr-9 text-xs sm:text-sm font-semibold text-gray-700 shadow-2xs focus:outline-hidden focus:border-agri-600"
           >
-            <option value="Last 3 Months">Last 3 Months</option>
-            <option value="Last 6 Months">Last 6 Months</option>
-            <option value="Current Season">Current Season</option>
+            <option value="Last 3 Months">{isHi ? 'पिछले 3 महीने' : 'Last 3 Months'}</option>
+            <option value="Last 6 Months">{isHi ? 'पिछले 6 महीने' : 'Last 6 Months'}</option>
+            <option value="Current Season">{isHi ? 'वर्तमान मौसम / चक्र' : 'Current Season'}</option>
           </select>
           <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-2.5 pointer-events-none" />
         </div>
@@ -144,16 +150,18 @@ export const SatellitePage: React.FC = () => {
                   </div>
                   <div className="h-2.5 rounded-full ndvi-gradient w-full shadow-inner"></div>
                   <div className="flex justify-between text-[9px] text-gray-500 mt-1 font-medium">
-                    <span>Stressed (0.0)</span>
-                    <span>Moderate (0.5)</span>
-                    <span>Healthy (1.0)</span>
+                    <span>{isHi ? 'तनावग्रस्त (0.0)' : 'Stressed (0.0)'}</span>
+                    <span>{isHi ? 'मध्यम (0.5)' : 'Moderate (0.5)'}</span>
+                    <span>{isHi ? 'स्वस्थ (1.0)' : 'Healthy (1.0)'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <Info className="w-3.5 h-3.5 text-gray-400" />
-                <span>Data source: {satellite.source || 'Satellite Provider'}</span>
+                <span>
+                  {isHi ? 'डेटा स्रोत: सेंटिनल-2 उपग्रह' : `Data source: ${satellite.source || 'Satellite Provider'}`}
+                </span>
               </div>
             </div>
 
@@ -171,11 +179,18 @@ export const SatellitePage: React.FC = () => {
                          : '—'}
                   </span>
                   <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
-                    {satellite.status}
+                    {isHi
+                      ? (satellite.status === 'Healthy' ? 'स्वस्थ'
+                          : satellite.status === 'Moderate' ? 'मध्यम'
+                          : satellite.status === 'Stressed' ? 'तनावग्रस्त'
+                          : satellite.status)
+                      : satellite.status}
                   </span>
                 </div>
                 {satellite.lastUpdated && (
-                  <p className="text-[11px] text-gray-400 mt-1">Last updated: {satellite.lastUpdated}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {isHi ? `अंतिम अपडेट: ${satellite.lastUpdated}` : `Last updated: ${satellite.lastUpdated}`}
+                  </p>
                 )}
               </div>
 
@@ -209,7 +224,7 @@ export const SatellitePage: React.FC = () => {
                           tickLine={false}
                         />
                         <Tooltip
-                          formatter={(val: any) => [`${val}`, 'NDVI Value']}
+                          formatter={(val: any) => [`${val}`, isHi ? 'NDVI मान' : 'NDVI Value']}
                           contentStyle={{
                             backgroundColor: '#ffffff',
                             borderColor: '#e5e7eb',
@@ -235,7 +250,9 @@ export const SatellitePage: React.FC = () => {
               {/* Explanation Callout */}
               {satellite.explanation && (
                 <div className="p-4 rounded-2xl bg-[#edf7ee] border border-agri-200/80 text-xs text-gray-700 leading-relaxed">
-                  <p className="font-semibold text-agri-950 mb-0.5">Vegetation Insight</p>
+                  <p className="font-semibold text-agri-950 mb-0.5">
+                    {isHi ? 'वनस्पति अंतर्दृष्टि' : 'Vegetation Insight'}
+                  </p>
                   <p>{satellite.explanation}</p>
                 </div>
               )}

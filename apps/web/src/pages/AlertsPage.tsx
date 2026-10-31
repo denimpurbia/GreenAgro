@@ -22,6 +22,28 @@ import { authService } from '../services/authService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+const SEVERITY_MAP_HI: Record<string, string> = {
+  critical: 'अति-गंभीर (Critical)',
+  warning: 'चेतावनी (Warning)',
+  info: 'सूचना (Info)',
+};
+
+const CATEGORY_MAP_HI: Record<string, string> = {
+  heavy_rainfall: 'अतिवृष्टि / भारी वर्षा',
+  weather_alert: 'मौसम चेतावनी',
+  heatwave: 'भीषण गर्मी / लू',
+  cold_wave: 'शीतलहर / पाला',
+  high_wind: 'तेज़ हवा / आंधी',
+  crop_disease: 'कीट व फसल रोग',
+  pest_outbreak: 'कीट प्रकोप',
+  admin_broadcast: 'प्रशासनिक सूचना',
+  general_advisory: 'सामान्य कृषि सलाह',
+  severe_erosion: 'मृदा क्षरण',
+  lake_water_drop: 'झील जल स्तर',
+  fire_nearby: 'अग्नि अलर्ट',
+  mandi_below_msp: 'मंडी भाव / एमएसपी',
+};
+
 export const AlertsPage: React.FC = () => {
   const { language, user } = useApp();
   const isHi = language === 'hi';
@@ -367,7 +389,7 @@ export const AlertsPage: React.FC = () => {
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${style.badge}`}
                       >
-                        {alert.severity}
+                        {isHi ? SEVERITY_MAP_HI[alert.severity] || alert.severity : alert.severity}
                       </span>
                       {!alert.isRead && (
                         <span className="w-2 h-2 rounded-full bg-agri-600 animate-pulse" />
@@ -377,8 +399,11 @@ export const AlertsPage: React.FC = () => {
                       {isHi ? alert.messageHi || alert.message : alert.message}
                     </p>
                     <span className="text-[11px] text-gray-400 block pt-0.5">
-                      Category: {alert.category ? alert.category.replace(/_/g, ' ') : 'Advisory'} •{' '}
-                      {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : ''}
+                      {isHi ? 'श्रेणी:' : 'Category:'}{' '}
+                      {isHi
+                        ? CATEGORY_MAP_HI[alert.category] || alert.category?.replace(/_/g, ' ') || 'कृषि सलाह'
+                        : alert.category ? alert.category.replace(/_/g, ' ') : 'Advisory'}{' '}
+                      • {alert.createdAt ? new Date(alert.createdAt).toLocaleString(isHi ? 'hi-IN' : 'en-US') : ''}
                     </span>
                   </div>
                 </div>

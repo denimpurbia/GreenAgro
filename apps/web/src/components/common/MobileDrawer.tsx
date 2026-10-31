@@ -35,38 +35,39 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
 
   if (!isOpen) return null;
 
+  const isHi = language === 'hi';
   const isGovt = authService.isGovtOrg(user);
   const canVerify = authService.canVerifyAccounts(user);
 
   const farmerNavItems = [
-    { to: '/app', icon: Home, label: t('nav.home') || 'Dashboard', exact: true },
-    { to: '/app/farm', icon: MapPin, label: t('nav.myFarm') || 'My Farm' },
-    { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') || 'Satellite View' },
-    { to: '/app/soil', icon: Sprout, label: t('nav.soilHealth') || 'Soil Health' },
-    { to: '/app/weather', icon: CloudSun, label: t('nav.weather') || 'Weather' },
-    { to: '/app/disease', icon: Stethoscope, label: t('nav.cropDoctor') || 'Crop Doctor' },
-    { to: '/app/market', icon: Store, label: t('nav.market') || 'Fair Market' },
-    { to: '/app/reports', icon: Users, label: t('nav.reports') || 'Community Reports' },
-    { to: '/app/regenerative', icon: Leaf, label: t('nav.regenerativePlan') || 'Regenerative Plan' },
-    { to: '/app/knowledge', icon: Globe2, label: t('nav.knowledgeExchange') || 'Knowledge Exchange' },
-    { to: '/app/settings', icon: Settings, label: t('nav.settings') || 'Settings' },
+    { to: '/app', icon: Home, label: isHi ? 'होम' : 'Dashboard', exact: true },
+    { to: '/app/farm', icon: MapPin, label: isHi ? 'मेरा खेत' : 'My Farm' },
+    { to: '/app/satellite', icon: Satellite, label: isHi ? 'सैटेलाइट व्यू' : 'Satellite View' },
+    { to: '/app/soil', icon: Sprout, label: isHi ? 'मिट्टी की सेहत' : 'Soil Health' },
+    { to: '/app/weather', icon: CloudSun, label: isHi ? 'मौसम' : 'Weather' },
+    { to: '/app/disease', icon: Stethoscope, label: isHi ? 'फसल डॉक्टर' : 'Crop Doctor' },
+    { to: '/app/market', icon: Store, label: isHi ? 'उचित बाजार भाव' : 'Fair Market' },
+    { to: '/app/reports', icon: Users, label: isHi ? 'सामुदायिक रिपोर्ट' : 'Community Reports' },
+    { to: '/app/regenerative', icon: Leaf, label: isHi ? 'पुनर्योजी योजना' : 'Regenerative Plan' },
+    { to: '/app/knowledge', icon: Globe2, label: isHi ? 'ज्ञान विनिमय' : 'Knowledge Exchange' },
+    { to: '/app/settings', icon: Settings, label: isHi ? 'सेटिंग्स' : 'Settings' },
   ];
 
   const govtNavItems = [
-    { to: '/app/gov', icon: Building2, label: 'Government Dashboard', exact: true },
+    { to: '/app/gov', icon: Building2, label: isHi ? 'सरकारी डैशबोर्ड' : 'Government Dashboard', exact: true },
     ...(canVerify
-      ? [{ to: '/app/admin/verifications', icon: ShieldCheck, label: 'Account Verification' }]
+      ? [{ to: '/app/admin/verifications', icon: ShieldCheck, label: isHi ? 'खाता सत्यापन' : 'Account Verification' }]
       : []),
-    { to: '/app/lakes', icon: Waves, label: 'Lakes Monitor' },
-    { to: '/app/watershed', icon: Mountain, label: 'Watershed Defense' },
-    { to: '/app/aravalli', icon: Shield, label: 'Aravalli Guard' },
-    { to: '/app/reports', icon: Users, label: 'Community Reports Moderation' },
-    { to: '/app/landscape', icon: Mountain, label: 'Ridge-to-Lake Landscape' },
-    { to: '/app/alerts', icon: Bell, label: 'Unified Alerts' },
-    { to: '/app/market', icon: Store, label: 'Fair Market Monitoring' },
-    { to: '/app/gov/regional', icon: BarChart3, label: 'Farmer / Regional Overview' },
-    { to: '/app/schemes', icon: BookOpen, label: 'Government Schemes' },
-    { to: '/app/settings', icon: Settings, label: 'Settings' },
+    { to: '/app/lakes', icon: Waves, label: isHi ? 'झील निगरानी' : 'Lakes Monitor' },
+    { to: '/app/watershed', icon: Mountain, label: isHi ? 'जलग्रहण सुरक्षा' : 'Watershed Defense' },
+    { to: '/app/aravalli', icon: Shield, label: isHi ? 'अरावली संरक्षण' : 'Aravalli Guard' },
+    { to: '/app/reports', icon: Users, label: isHi ? 'सामुदायिक रिपोर्ट मॉडरेशन' : 'Community Reports Moderation' },
+    { to: '/app/landscape', icon: Mountain, label: isHi ? 'रिज-टू-झील परिदृश्य' : 'Ridge-to-Lake Landscape' },
+    { to: '/app/alerts', icon: Bell, label: isHi ? 'एकीकृत अलर्ट केंद्र' : 'Unified Alerts' },
+    { to: '/app/market', icon: Store, label: isHi ? 'मंडी भाव निगरानी' : 'Fair Market Monitoring' },
+    { to: '/app/gov/regional', icon: BarChart3, label: isHi ? 'किसान व क्षेत्रीय अवलोकन' : 'Farmer / Regional Overview' },
+    { to: '/app/schemes', icon: BookOpen, label: isHi ? 'सरकारी योजनाएं' : 'Government Schemes' },
+    { to: '/app/settings', icon: Settings, label: isHi ? 'सेटिंग्स' : 'Settings' },
   ];
 
   const allNavItems = isGovt ? govtNavItems : farmerNavItems;
@@ -108,7 +109,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
           >
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">
-              {isGovt ? 'GOVT / ORG ADMIN PORTAL' : 'FARMER PORTAL'}
+              {isGovt
+                ? (isHi ? 'सरकारी / संस्था पोर्टल' : 'GOVT / ORG ADMIN PORTAL')
+                : (isHi ? 'किसान पोर्टल' : 'FARMER PORTAL')}
             </span>
           </div>
         </div>

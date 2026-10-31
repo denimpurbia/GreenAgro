@@ -577,10 +577,18 @@ const VillageAutocompleteSearch: React.FC<{
   value,
   onChangeText,
   onSelectLocation,
-  placeholder = 'Search your village, farm landmark, or tehsil (e.g. Thur, near jain mandir, Bargaon...)',
+  placeholder,
   compact = false,
   currentCoords = { lat: 24.6611, lng: 73.6633 },
 }) => {
+  const { language } = useApp();
+  const isHi = language === 'hi';
+  const activePlaceholder =
+    placeholder ||
+    (isHi
+      ? 'स्थान या खेत का लैंडमार्क खोजें (उदा. थूर, जैन मंदिर के पास, बड़गांव, गोगुंदा...)'
+      : 'Search your village, farm landmark, or tehsil (e.g. Thur, near jain mandir, Bargaon...)');
+
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -626,6 +634,21 @@ const VillageAutocompleteSearch: React.FC<{
     }
   };
 
+  const getLocalizedPlaceType = (pt: string) => {
+    if (!isHi) return pt;
+    if (pt.includes('Exact Farm Plot')) return 'वास्तविक खेत प्लॉट 📍';
+    if (pt === 'Village') return 'गांव';
+    if (pt === 'Tehsil') return 'तहसील';
+    if (pt === 'Town / Tehsil') return 'कस्बा / तहसील';
+    if (pt === 'Village / Tehsil') return 'गांव / तहसील';
+    if (pt === 'District') return 'जिला';
+    if (pt === 'District / Town') return 'जिला / कस्बा';
+    if (pt === 'Agricultural Town') return 'कृषि कस्बा';
+    if (pt === 'Locality') return 'इलाका';
+    if (pt === 'Temple / Landmark') return 'मंदिर / लैंडमार्क';
+    return 'स्थान';
+  };
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative flex items-center">
@@ -643,7 +666,7 @@ const VillageAutocompleteSearch: React.FC<{
             setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={activePlaceholder}
           className={`w-full bg-white border-2 border-emerald-600/40 focus:border-[#156637] rounded-xl pl-10 pr-9 ${
             compact ? 'py-2 text-xs' : 'py-2.5 text-xs sm:text-sm'
           } text-gray-900 font-medium shadow-sm focus:outline-none transition-all`}
@@ -658,7 +681,7 @@ const VillageAutocompleteSearch: React.FC<{
               setIsOpen(true);
             }}
             className="absolute right-2.5 p-1 text-gray-400 hover:text-gray-700 cursor-pointer"
-            title="Clear location search"
+            title={isHi ? 'खोज हटाएं' : 'Clear location search'}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -668,8 +691,8 @@ const VillageAutocompleteSearch: React.FC<{
       {isOpen && suggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1.5 z-[2000] bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-72 overflow-y-auto divide-y divide-gray-100">
           <div className="px-3.5 py-1.5 bg-[#f4f8f4] text-[10px] font-bold uppercase tracking-wider text-[#156637] flex items-center justify-between">
-            <span>Select Location to Fly Map to Your Farm</span>
-            <span>Google Maps Live Search</span>
+            <span>{isHi ? 'खेत पर सैटेलाइट नक्शा ले जाने के लिए चुनें' : 'Select Location to Fly Map to Your Farm'}</span>
+            <span>{isHi ? 'गूगल मैप्स लाइव खोज' : 'Google Maps Live Search'}</span>
           </div>
           {suggestions.map((item) => (
             <button
@@ -701,7 +724,7 @@ const VillageAutocompleteSearch: React.FC<{
                     : 'bg-gray-100 text-gray-600 group-hover:bg-emerald-100 group-hover:text-emerald-800'
                 }`}
               >
-                {item.placeType}
+                {getLocalizedPlaceType(item.placeType)}
               </span>
             </button>
           ))}
@@ -716,7 +739,8 @@ const VillageAutocompleteSearch: React.FC<{
 ========================================================= */
 
 export const MyFarmPage: React.FC = () => {
-  const { t, farm, createFarm, updateFarmData } = useApp();
+  const { t, farm, createFarm, updateFarmData, language } = useApp();
+  const isHi = language === 'hi';
 
   const currentFarm = farm as FarmWithBoundary | null;
 
@@ -1121,7 +1145,7 @@ export const MyFarmPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#156637] hover:bg-[#104e2a] text-white font-semibold text-xs sm:text-sm shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Create / Map New Farm</span>
+            <span>{isHi ? '+ नया खेत जोड़ें' : 'Create / Map New Farm'}</span>
           </button>
 
           {currentFarm && (
@@ -1130,7 +1154,7 @@ export const MyFarmPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-[#f2f6f2] text-[#156637] border border-emerald-200 font-semibold text-xs sm:text-sm shadow-sm transition-all cursor-pointer"
             >
               <Edit2 className="w-4 h-4" />
-              <span>{t('farm.edit')}</span>
+              <span>{isHi ? 'खेत संपादित करें' : t('farm.edit')}</span>
             </button>
           )}
         </div>
@@ -1147,10 +1171,14 @@ export const MyFarmPage: React.FC = () => {
 
           <div className="max-w-md space-y-2">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Map your farm with Google Maps Ultra-HD Satellite
+              {isHi
+                ? 'गूगल मैप्स अल्ट्रा-एचडी सैटेलाइट से अपने खेत का नक्शा बनाएं'
+                : 'Map your farm with Google Maps Ultra-HD Satellite'}
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-              Type your village name or farm landmark (e.g. "Thur, near jain mandir"), fly directly to your field on crystal-clear satellite imagery, and click the corners to calculate your area in Acres automatically.
+              {isHi
+                ? 'अपना गांव या खेत लैंडमार्क लिखें (उदा. "थूर, जैन मंदिर के पास"), सीधे अपने खेत पर पहुंचें, और स्वतः एकड़ में क्षेत्रफल मापने के लिए खेत के कोनों पर क्लिक करें।'
+                : 'Type your village name or farm landmark (e.g. "Thur, near jain mandir"), fly directly to your field on crystal-clear satellite imagery, and click the corners to calculate your area in Acres automatically.'}
             </p>
           </div>
 
@@ -1159,7 +1187,7 @@ export const MyFarmPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#156637] hover:bg-[#104e2a] text-white font-bold text-sm shadow-md transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Create Farm on Satellite Map</span>
+            <span>{isHi ? 'सैटेलाइट नक्शे पर खेत बनाएं' : 'Create Farm on Satellite Map'}</span>
           </button>
         </div>
       )}
@@ -1177,14 +1205,14 @@ export const MyFarmPage: React.FC = () => {
                   {currentFarm.name}
                 </h2>
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
-                  Ultra-HD Satellite Plot
+                  {isHi ? 'अल्ट्रा-एचडी सैटेलाइट प्लॉट' : 'Ultra-HD Satellite Plot'}
                 </span>
               </div>
 
               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-agri-700 shrink-0" />
                 <span>
-                  {currentFarm.locationName || 'Location not specified'}
+                  {currentFarm.locationName || (isHi ? 'स्थान निर्दिष्ट नहीं' : 'Location not specified')}
                 </span>
               </p>
             </div>
@@ -1195,7 +1223,7 @@ export const MyFarmPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-[#156637] hover:bg-emerald-100 transition-colors cursor-pointer"
               >
                 <Pentagon className="w-3.5 h-3.5" />
-                <span>Search Location & Redraw Plot</span>
+                <span>{isHi ? 'स्थान खोजें व सीमा बनाएं' : 'Search Location & Redraw Plot'}</span>
               </button>
             </div>
           </div>
@@ -1204,12 +1232,12 @@ export const MyFarmPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
             <div className="bg-[#f8faf7] p-3 sm:p-4 rounded-2xl border border-agri-100/80">
               <span className="text-[11px] sm:text-xs text-gray-500 font-medium block">
-                {t('farm.totalArea')} (Auto-Calculated)
+                {t('farm.totalArea')} {isHi ? '(स्वचालित गणना)' : '(Auto-Calculated)'}
               </span>
               <span className="text-sm sm:text-lg font-extrabold text-[#156637] mt-0.5 sm:mt-1 block truncate">
                 {displayAreaAcres > 0
-                  ? `${displayAreaAcres} acres`
-                  : 'Draw plot on map'}
+                  ? `${displayAreaAcres} ${isHi ? 'एकड़' : 'acres'}`
+                  : (isHi ? 'नक्शे पर खेत बनाएं' : 'Draw plot on map')}
               </span>
             </div>
 
@@ -1218,7 +1246,7 @@ export const MyFarmPage: React.FC = () => {
                 {t('farm.primaryCrop')}
               </span>
               <span className="text-sm sm:text-lg font-extrabold text-gray-900 mt-0.5 sm:mt-1 block truncate">
-                {currentFarm.primaryCrop || 'Not specified'}
+                {currentFarm.primaryCrop || (isHi ? 'निर्दिष्ट नहीं' : 'Not specified')}
               </span>
             </div>
 
@@ -1227,7 +1255,7 @@ export const MyFarmPage: React.FC = () => {
                 {t('farm.soilType')}
               </span>
               <span className="text-sm sm:text-lg font-extrabold text-gray-900 mt-0.5 sm:mt-1 block truncate">
-                {currentFarm.soilType || 'Not specified'}
+                {currentFarm.soilType || (isHi ? 'निर्दिष्ट नहीं' : 'Not specified')}
               </span>
             </div>
 
@@ -1236,7 +1264,7 @@ export const MyFarmPage: React.FC = () => {
                 {t('farm.irrigation')}
               </span>
               <span className="text-sm sm:text-lg font-extrabold text-gray-900 mt-0.5 sm:mt-1 block truncate">
-                {currentFarm.irrigationMethod || 'Not specified'}
+                {currentFarm.irrigationMethod || (isHi ? 'निर्दिष्ट नहीं' : 'Not specified')}
               </span>
             </div>
           </div>
@@ -1249,7 +1277,7 @@ export const MyFarmPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-agri-700" />
                 <h3 className="font-bold text-sm sm:text-base text-gray-900">
-                  {t('farm.fieldLocation')} & Boundary Points
+                  {t('farm.fieldLocation')} &amp; {isHi ? 'सीमा बिंदु' : 'Boundary Points'}
                 </h3>
               </div>
 
@@ -1258,7 +1286,11 @@ export const MyFarmPage: React.FC = () => {
                   value={mainMapSearchText}
                   onChangeText={setMainMapSearchText}
                   onSelectLocation={handleSelectMainMapLocation}
-                  placeholder="Type village or farm landmark (e.g. Thur, near jain mandir...)"
+                  placeholder={
+                    isHi
+                      ? 'गांव या खेत लैंडमार्क खोजें (उदा. थूर, जैन मंदिर के पास...)'
+                      : 'Type village or farm landmark (e.g. Thur, near jain mandir...)'
+                  }
                   compact
                   currentCoords={mainMapCenter}
                 />
@@ -1365,7 +1397,7 @@ export const MyFarmPage: React.FC = () => {
                     }`}
                   >
                     <Satellite className="w-3.5 h-3.5" />
-                    Google HD (Roads)
+                    {isHi ? 'गूगल एचडी' : 'Google HD'}
                   </button>
 
                   <button
@@ -1378,7 +1410,7 @@ export const MyFarmPage: React.FC = () => {
                     }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    Pure Satellite
+                    {isHi ? 'शुद्ध सैटेलाइट' : 'Pure Satellite'}
                   </button>
 
                   <button
@@ -1391,7 +1423,7 @@ export const MyFarmPage: React.FC = () => {
                     }`}
                   >
                     <MapIcon className="w-3.5 h-3.5" />
-                    Street
+                    {isHi ? 'सड़क नक्शा' : 'Street'}
                   </button>
                 </div>
 
@@ -1404,10 +1436,14 @@ export const MyFarmPage: React.FC = () => {
                         ? 'bg-emerald-700 text-white border-emerald-800'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
-                    title="Toggle High-Contrast Field Sharpness"
+                    title={isHi ? 'उच्च स्पष्टता टॉगल करें' : 'Toggle High-Contrast Field Sharpness'}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>HD Clarity: {isHdClarityBoost ? 'ON' : 'OFF'}</span>
+                    <span>
+                      {isHi
+                        ? `एचडी स्पष्टता: ${isHdClarityBoost ? 'चालू' : 'बंद'}`
+                        : `HD Clarity: ${isHdClarityBoost ? 'ON' : 'OFF'}`}
+                    </span>
                   </button>
 
                   {googleMapsUrl && !isDrawingBoundary && (
@@ -1431,7 +1467,7 @@ export const MyFarmPage: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <MousePointerClick className="w-4 h-4 text-[#156637]" />
                       <strong className="text-xs text-gray-900">
-                        Click Farm Corners on Map
+                        {isHi ? 'नक्शे पर खेत के कोने चुनें' : 'Click Farm Corners on Map'}
                       </strong>
                     </div>
                     <button
@@ -1444,15 +1480,17 @@ export const MyFarmPage: React.FC = () => {
                   </div>
 
                   <p className="text-[11px] text-gray-600 mb-2.5">
-                    Click 3 or more corners of your field on the HD satellite image. Acres calculate automatically!
+                    {isHi
+                      ? 'एचडी सैटेलाइट पर खेत के 3 या अधिक कोनों पर क्लिक करें। एकड़ में क्षेत्रफल स्वतः गिना जाएगा!'
+                      : 'Click 3 or more corners of your field on the HD satellite image. Acres calculate automatically!'}
                   </p>
 
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs mb-3">
                     <span className="font-semibold text-gray-700">
-                      Points: {boundaryPoints.length}
+                      {isHi ? `बिंदु: ${boundaryPoints.length}` : `Points: ${boundaryPoints.length}`}
                     </span>
                     <span className="font-extrabold text-[#156637]">
-                      {calculatedBoundaryArea} Acres
+                      {calculatedBoundaryArea} {isHi ? 'एकड़' : 'Acres'}
                     </span>
                   </div>
 
@@ -1464,7 +1502,7 @@ export const MyFarmPage: React.FC = () => {
                       className="px-2 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[11px] font-bold disabled:opacity-40 cursor-pointer"
                     >
                       <RotateCcw className="w-3 h-3 inline mr-1" />
-                      Undo
+                      {isHi ? 'पूर्ववत' : 'Undo'}
                     </button>
 
                     <button
@@ -1474,7 +1512,7 @@ export const MyFarmPage: React.FC = () => {
                       className="px-2 py-1.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-bold disabled:opacity-40 cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3 inline mr-1" />
-                      Clear
+                      {isHi ? 'हटाएं' : 'Clear'}
                     </button>
 
                     <button
@@ -1483,7 +1521,9 @@ export const MyFarmPage: React.FC = () => {
                       disabled={boundaryPoints.length < 3 || isSavingBoundary}
                       className="px-2 py-1.5 rounded-lg bg-[#156637] text-white text-[11px] font-bold disabled:opacity-40 cursor-pointer"
                     >
-                      {isSavingBoundary ? 'Saving...' : 'Save Plot'}
+                      {isSavingBoundary
+                        ? (isHi ? 'सहेजा जा रहा है...' : 'Saving...')
+                        : (isHi ? 'खेत सहेजें' : 'Save Plot')}
                     </button>
                   </div>
                 </div>
@@ -1498,16 +1538,20 @@ export const MyFarmPage: React.FC = () => {
                 >
                   <Pentagon className="w-4 h-4" />
                   {boundaryPoints.length >= 3
-                    ? 'Redraw Farm Boundary Points'
-                    : 'Click to Draw Farm Boundary'}
+                    ? (isHi ? 'खेत सीमा रेखांकित बिंदु बदलें' : 'Redraw Farm Boundary Points')
+                    : (isHi ? 'खेत सीमा बनाने के लिए क्लिक करें' : 'Click to Draw Farm Boundary')}
                 </button>
               )}
 
               {/* MAP BADGE */}
               <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-lg text-[11px] font-bold text-gray-800 shadow-md border border-gray-200">
                 {boundaryPoints.length >= 3
-                  ? `Calculated Area: ${calculatedBoundaryArea} Acres (${boundaryPoints.length} points)`
-                  : 'Google Maps Ultra-HD Satellite • Zoom in to see field walls & trees'}
+                  ? (isHi
+                      ? `गणना क्षेत्रफल: ${calculatedBoundaryArea} एकड़ (${boundaryPoints.length} बिंदु)`
+                      : `Calculated Area: ${calculatedBoundaryArea} Acres (${boundaryPoints.length} points)`)
+                  : (isHi
+                      ? 'गूगल मैप्स अल्ट्रा-एचडी सैटेलाइट • खेत की मेड़ व पेड़ देखने के लिए ज़ूम करें'
+                      : 'Google Maps Ultra-HD Satellite • Zoom in to see field walls & trees')}
               </div>
             </div>
 
@@ -1516,12 +1560,16 @@ export const MyFarmPage: React.FC = () => {
               {boundaryPoints.length >= 3 ? (
                 <div className="text-xs text-emerald-700 font-semibold">
                   <Check className="w-3.5 h-3.5 inline mr-1" />
-                  Real farm boundary mapped from {boundaryPoints.length} points •{' '}
-                  <strong>{calculatedBoundaryArea} acres</strong>
+                  {isHi
+                    ? `${boundaryPoints.length} बिंदुओं से वास्तविक खेत सीमा रेखांकित • `
+                    : `Real farm boundary mapped from ${boundaryPoints.length} points • `}
+                  <strong>{calculatedBoundaryArea} {isHi ? 'एकड़' : 'acres'}</strong>
                 </div>
               ) : (
                 <div className="text-xs text-gray-500">
-                  Search your village or farm landmark above, then click “Click to Draw Farm Boundary” to trace your plot.
+                  {isHi
+                    ? 'ऊपर अपना गांव या खेत का पता खोजें, फिर खेत का नक्शा बनाने के लिए "खेत सीमा बनाने के लिए क्लिक करें" बटन दबाएं।'
+                    : 'Search your village or farm landmark above, then click “Click to Draw Farm Boundary” to trace your plot.'}
                 </div>
               )}
 
@@ -1533,7 +1581,7 @@ export const MyFarmPage: React.FC = () => {
                   className="text-xs text-red-600 font-semibold hover:underline cursor-pointer disabled:opacity-50"
                 >
                   <Trash2 className="w-3 h-3 inline mr-1" />
-                  Remove Boundary
+                  {isHi ? 'सीमा हटाएं' : 'Remove Boundary'}
                 </button>
               )}
             </div>
@@ -1555,11 +1603,13 @@ export const MyFarmPage: React.FC = () => {
               <div>
                 <h3 className="font-extrabold text-base sm:text-lg text-[#0f291e]">
                   {isCreating || !currentFarm
-                    ? 'Create Your Farm on Satellite Map'
-                    : 'Manage Farm Plot & Boundary'}
+                    ? (isHi ? 'सैटेलाइट नक्शे पर खेत बनाएं' : 'Create Your Farm on Satellite Map')
+                    : (isHi ? 'खेत प्लॉट और सीमा प्रबंधित करें' : 'Manage Farm Plot & Boundary')}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                  Step 1: Search village / landmark • Step 2: Click field corners on HD Satellite • Step 3: Save Plot
+                  {isHi
+                    ? 'चरण 1: गांव/स्थान खोजें • चरण 2: सैटेलाइट पर खेत कोने चुनें • चरण 3: सहेजें'
+                    : 'Step 1: Search village / landmark • Step 2: Click field corners on HD Satellite • Step 3: Save Plot'}
                 </p>
               </div>
 
@@ -1582,7 +1632,7 @@ export const MyFarmPage: React.FC = () => {
               {/* STEP 1: GOOGLE-MAPS-STYLE VILLAGE / LANDMARK SEARCH */}
               <div className="bg-[#f4f8f4] p-3.5 sm:p-4 rounded-2xl border border-emerald-200/80 space-y-2">
                 <label className="block text-xs font-extrabold text-[#0f291e]">
-                  1. Search Your Village, Farm Landmark, or Tehsil{' '}
+                  {isHi ? '1. अपना गांव, खेत लैंडमार्क या तहसील खोजें' : '1. Search Your Village, Farm Landmark, or Tehsil'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
 
@@ -1592,14 +1642,20 @@ export const MyFarmPage: React.FC = () => {
                     setFormData((prev) => ({ ...prev, locationName: txt }))
                   }
                   onSelectLocation={handleSelectModalLocation}
-                  placeholder="Type location (e.g. Thur, near jain mandir, Bargaon, Gogunda...)"
+                  placeholder={
+                    isHi
+                      ? 'स्थान खोजें (उदा. थूर, जैन मंदिर के पास, बड़गांव, गोगुंदा...)'
+                      : 'Type location (e.g. Thur, near jain mandir, Bargaon, Gogunda...)'
+                  }
                   currentCoords={modalMapCenter}
                 />
 
                 <p className="text-[11px] text-gray-600 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#156637] shrink-0" />
                   <span>
-                    Select from suggestions — the Ultra-HD satellite map below will immediately fly to your exact farm location!
+                    {isHi
+                      ? 'सुझावों में से चुनें — नीचे दिया गया एचडी सैटेलाइट नक्शा तुरंत आपके वास्तविक खेत पर पहुंच जाएगा!'
+                      : 'Select from suggestions — the Ultra-HD satellite map below will immediately fly to your exact farm location!'}
                   </span>
                 </p>
               </div>
@@ -1608,7 +1664,9 @@ export const MyFarmPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="block text-xs font-extrabold text-[#0f291e]">
-                    2. Click Your Farm Corners on HD Satellite Map (Minimum 3 Points){' '}
+                    {isHi
+                      ? '2. एचडी सैटेलाइट नक्शे पर खेत के कोने चुनें (कम से कम 3 बिंदु)'
+                      : '2. Click Your Farm Corners on HD Satellite Map (Minimum 3 Points)'}{' '}
                     <span className="text-red-500">*</span>
                   </label>
 
@@ -1622,7 +1680,7 @@ export const MyFarmPage: React.FC = () => {
                       className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold disabled:opacity-40 cursor-pointer flex items-center gap-1"
                     >
                       <RotateCcw className="w-3 h-3" />
-                      Undo Point
+                      {isHi ? 'पूर्ववत बिंदु' : 'Undo Point'}
                     </button>
 
                     <button
@@ -1632,7 +1690,7 @@ export const MyFarmPage: React.FC = () => {
                       className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold disabled:opacity-40 cursor-pointer flex items-center gap-1"
                     >
                       <Trash2 className="w-3 h-3" />
-                      Clear All
+                      {isHi ? 'सब हटाएं' : 'Clear All'}
                     </button>
                   </div>
                 </div>
@@ -1712,7 +1770,7 @@ export const MyFarmPage: React.FC = () => {
                       }`}
                     >
                       <Satellite className="w-3 h-3" />
-                      Google HD
+                      {isHi ? 'गूगल एचडी' : 'Google HD'}
                     </button>
                     <button
                       type="button"
@@ -1724,7 +1782,7 @@ export const MyFarmPage: React.FC = () => {
                       }`}
                     >
                       <Eye className="w-3 h-3" />
-                      Pure Photo
+                      {isHi ? 'शुद्ध सैटेलाइट' : 'Pure Photo'}
                     </button>
                     <button
                       type="button"
@@ -1736,7 +1794,7 @@ export const MyFarmPage: React.FC = () => {
                       }`}
                     >
                       <MapIcon className="w-3 h-3" />
-                      Street
+                      {isHi ? 'सड़क नक्शा' : 'Street'}
                     </button>
                   </div>
 
@@ -1746,30 +1804,36 @@ export const MyFarmPage: React.FC = () => {
                       <MousePointerClick className="w-4 h-4 text-[#156637] shrink-0" />
                       {modalBoundaryPoints.length === 0 && (
                         <span>
-                          Click on the corners of your farm on the satellite view to trace your plot
+                          {isHi
+                            ? 'खेत का नक्शा बनाने के लिए सैटेलाइट पर अपने खेत के कोनों पर क्लिक करें'
+                            : 'Click on the corners of your farm on the satellite view to trace your plot'}
                         </span>
                       )}
                       {modalBoundaryPoints.length > 0 &&
                         modalBoundaryPoints.length < 3 && (
                           <span>
-                            {modalBoundaryPoints.length} point(s) marked — click at least{' '}
-                            {3 - modalBoundaryPoints.length} more corner(s)
+                            {isHi
+                              ? `${modalBoundaryPoints.length} बिंदु चिह्नित — कम से कम ${3 - modalBoundaryPoints.length} और कोने चुनें`
+                              : `${modalBoundaryPoints.length} point(s) marked — click at least ${3 - modalBoundaryPoints.length} more corner(s)`}
                           </span>
                         )}
                       {modalBoundaryPoints.length >= 3 && (
                         <span className="text-emerald-800 font-bold">
-                          {modalBoundaryPoints.length} Corners Marked • Boundary Ready!
+                          {isHi
+                            ? `${modalBoundaryPoints.length} कोने चिह्नित • सीमा तैयार!`
+                            : `${modalBoundaryPoints.length} Corners Marked • Boundary Ready!`}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span className="px-2.5 py-1 rounded-lg bg-[#156637] text-white text-xs font-extrabold">
-                        Auto Area: {modalCalculatedArea} Acres
+                        {isHi ? 'स्वचालित क्षेत्रफल: ' : 'Auto Area: '}
+                        {modalCalculatedArea} {isHi ? 'एकड़' : 'Acres'}
                       </span>
                       {modalCalculatedArea > 0 && (
                         <span className="text-[11px] font-semibold text-gray-600 hidden sm:inline">
-                          ({modalCalculatedHectares} Ha • ~{modalCalculatedBigha} Bigha)
+                          ({modalCalculatedHectares} {isHi ? 'हेक्टेयर' : 'Ha'} • ~{modalCalculatedBigha} {isHi ? 'बीघा' : 'Bigha'})
                         </span>
                       )}
                     </div>
@@ -1781,11 +1845,11 @@ export const MyFarmPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Farm Name <span className="text-red-500">*</span>
+                    {isHi ? 'खेत का नाम' : 'Farm Name'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Kisan Organic Farm"
+                    placeholder={isHi ? 'उदा. किसान जैविक खेत' : 'e.g. Kisan Organic Farm'}
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({
@@ -1800,11 +1864,11 @@ export const MyFarmPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Primary Crop
+                    {isHi ? 'मुख्य फसल' : 'Primary Crop'}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Wheat, Maize, Mustard, Soybean"
+                    placeholder={isHi ? 'उदा. गेहूं, मक्का, सरसों, चना, सोयाबीन' : 'e.g. Wheat, Maize, Mustard, Soybean'}
                     value={formData.primaryCrop}
                     onChange={(e) =>
                       setFormData({
@@ -1821,18 +1885,18 @@ export const MyFarmPage: React.FC = () => {
                 {/* AUTO-CALCULATED FARM AREA DISPLAY (READ-ONLY) */}
                 <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl px-3.5 py-2 flex flex-col justify-center">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-800">
-                    Farm Area (From Map Points)
+                    {isHi ? 'खेत क्षेत्रफल (नक्शा बिंदुओं से)' : 'Farm Area (From Map Points)'}
                   </span>
                   <span className="text-sm sm:text-base font-extrabold text-[#156637] mt-0.5">
                     {modalCalculatedArea > 0
-                      ? `${modalCalculatedArea} Acres`
-                      : 'Click 3+ points on map'}
+                      ? `${modalCalculatedArea} ${isHi ? 'एकड़' : 'Acres'}`
+                      : (isHi ? 'नक्शे पर 3+ बिंदु चुनें' : 'Click 3+ points on map')}
                   </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Soil Type
+                    {isHi ? 'मिट्टी का प्रकार' : 'Soil Type'}
                   </label>
                   <select
                     value={formData.soilType}
@@ -1844,18 +1908,18 @@ export const MyFarmPage: React.FC = () => {
                     }
                     className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-[#156637]"
                   >
-                    <option value="Loamy">Loamy</option>
-                    <option value="Clay">Clay</option>
-                    <option value="Sandy Loam">Sandy Loam</option>
-                    <option value="Black Cotton">Black Cotton</option>
-                    <option value="Red Soil">Red Soil</option>
-                    <option value="Alluvial">Alluvial</option>
+                    <option value="Loamy">{isHi ? 'दोमट (Loamy)' : 'Loamy'}</option>
+                    <option value="Clay">{isHi ? 'चिकनी (Clay)' : 'Clay'}</option>
+                    <option value="Sandy Loam">{isHi ? 'बलुई दोमट (Sandy Loam)' : 'Sandy Loam'}</option>
+                    <option value="Black Cotton">{isHi ? 'काली मिट्टी (Black Cotton)' : 'Black Cotton'}</option>
+                    <option value="Red Soil">{isHi ? 'लाल मिट्टी (Red Soil)' : 'Red Soil'}</option>
+                    <option value="Alluvial">{isHi ? 'जलोढ़ मिट्टी (Alluvial)' : 'Alluvial'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Irrigation Method
+                    {isHi ? 'सिंचाई पद्धति' : 'Irrigation Method'}
                   </label>
                   <select
                     value={formData.irrigationMethod}
@@ -1867,10 +1931,10 @@ export const MyFarmPage: React.FC = () => {
                     }
                     className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-[#156637]"
                   >
-                    <option value="Drip">Drip</option>
-                    <option value="Sprinkler">Sprinkler</option>
-                    <option value="Flood / Furrow">Flood / Furrow</option>
-                    <option value="Rainfed">Rainfed</option>
+                    <option value="Drip">{isHi ? 'ड्रिप / टपक सिंचाई (Drip)' : 'Drip'}</option>
+                    <option value="Sprinkler">{isHi ? 'फव्वारा सिंचाई (Sprinkler)' : 'Sprinkler'}</option>
+                    <option value="Flood / Furrow">{isHi ? 'सतही / बहाव सिंचाई (Flood)' : 'Flood / Furrow'}</option>
+                    <option value="Rainfed">{isHi ? 'वर्षा आधारित (Rainfed)' : 'Rainfed'}</option>
                   </select>
                 </div>
               </div>
@@ -1882,7 +1946,7 @@ export const MyFarmPage: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
-                  Cancel
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
 
                 <button
@@ -1893,14 +1957,14 @@ export const MyFarmPage: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Saving Farm Plot...
+                      {isHi ? 'खेत सहेजा जा रहा है...' : 'Saving Farm Plot...'}
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
                       {isCreating || !currentFarm
-                        ? 'Create Farm Plot'
-                        : 'Save Farm Plot'}
+                        ? (isHi ? 'खेत प्लॉट बनाएं' : 'Create Farm Plot')
+                        : (isHi ? 'खेत प्लॉट सहेजें' : 'Save Farm Plot')}
                     </>
                   )}
                 </button>

@@ -13,6 +13,7 @@ import { authService } from '../services/authService';
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, user, setUser, language, setLanguage, logout } = useApp();
+  const isHi = language === 'hi';
   const isGovt = authService.isGovtOrg(user);
 
   const [activeTab, setActiveTab] = useState<'profile' | 'language' | 'notifications' | 'privacy'>('profile');
@@ -215,7 +216,9 @@ export const SettingsPage: React.FC = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-extrabold uppercase tracking-wider">
-                Account Type: {isGovt ? 'Govt / Org' : 'Farmer'}
+                {isHi
+                  ? `खाता प्रकार: ${isGovt ? 'सरकारी / संस्था' : 'किसान'}`
+                  : `Account Type: ${isGovt ? 'Govt / Org' : 'Farmer'}`}
               </span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
@@ -224,13 +227,15 @@ export const SettingsPage: React.FC = () => {
                     : 'bg-emerald-100 text-emerald-800'
                 }`}
               >
-                Status: {user?.accountStatus || 'verified'}
+                {isHi ? 'स्थिति: सत्यापित' : `Status: ${user?.accountStatus || 'verified'}`}
               </span>
             </div>
             <p className={`text-xs mt-0.5 ${isGovt ? 'text-emerald-200' : 'text-gray-600'}`}>
               {isGovt
-                ? `${user?.organizationName || 'Government / Organization'} • ${user?.designation || 'Official'} • ${[user?.district, user?.state].filter(Boolean).join(', ') || 'Rajasthan'}`
-                : 'Verified Farmer Portal Access (Farm Management, Soil, Weather, Crop Doctor, Fair Market)'}
+                ? `${user?.organizationName || (isHi ? 'सरकारी / संस्था' : 'Government / Organization')} • ${user?.designation || (isHi ? 'अधिकारी' : 'Official')} • ${[user?.district, user?.state].filter(Boolean).join(', ') || (isHi ? 'राजस्थान' : 'Rajasthan')}`
+                : (isHi
+                    ? 'सत्यापित किसान पोर्टल एक्सेस (खेत प्रबंधन, मृदा स्वास्थ्य, मौसम, फसल डॉक्टर, उचित मंडी भाव)'
+                    : 'Verified Farmer Portal Access (Farm Management, Soil, Weather, Crop Doctor, Fair Market)')}
             </p>
           </div>
         </div>
@@ -289,7 +294,7 @@ export const SettingsPage: React.FC = () => {
           {/* Left Form: Profile matching Screen 12 */}
           <div className="lg:col-span-7 space-y-5">
             <h2 className="text-base font-bold text-gray-900">
-              {t('settings.profile')} Details
+              {isHi ? 'प्रोफ़ाइल विवरण' : `${t('settings.profile')} Details`}
             </h2>
 
             {/* Avatar & Change Photo */}
@@ -311,10 +316,10 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleChangePhoto}
-                className="text-xs font-semibold text-agri-800 bg-[#f2f6f2] hover:bg-agri-100 px-3 py-1.5 rounded-xl border border-agri-200/80 transition-colors flex items-center gap-1.5"
+                className="text-xs font-semibold text-agri-800 bg-[#f2f6f2] hover:bg-agri-100 px-3 py-1.5 rounded-xl border border-agri-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>Change Photo</span>
+                <span>{isHi ? 'फोटो बदलें' : 'Change Photo'}</span>
               </button>
 
               <input
@@ -409,12 +414,12 @@ export const SettingsPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="py-2.5 px-5 rounded-xl bg-agri-800 hover:bg-agri-900 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all flex items-center gap-1.5"
+                className="py-2.5 px-5 rounded-xl bg-agri-800 hover:bg-agri-900 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 {savedSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-300" />
-                    <span>Saved!</span>
+                    <span>{isHi ? 'सहेजा गया!' : 'Saved!'}</span>
                   </>
                 ) : (
                   <span>{t('settings.saveChanges')}</span>
@@ -428,7 +433,9 @@ export const SettingsPage: React.FC = () => {
             {isGovt && user?.permissions && user.permissions.length > 0 && (
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
                 <span className="text-xs font-bold text-emerald-950 block">
-                  Approved Administrative Permissions ({user.permissions.length})
+                  {isHi
+                    ? `स्वीकृत प्रशासनिक अनुमतियां (${user.permissions.length})`
+                    : `Approved Administrative Permissions (${user.permissions.length})`}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {user.permissions.map((perm) => (
@@ -454,7 +461,7 @@ export const SettingsPage: React.FC = () => {
                     {t('settings.weatherAlerts')}
                   </span>
                   <span className="text-[11px] text-gray-500">
-                    High disease susceptibility notifications
+                    {isHi ? 'रोग संवेदनशीलता एवं मौसम चेतावनी' : 'High disease susceptibility notifications'}
                   </span>
                 </div>
                 <input
@@ -476,7 +483,7 @@ export const SettingsPage: React.FC = () => {
                     {t('settings.diseaseAlerts')}
                   </span>
                   <span className="text-[11px] text-gray-500">
-                    Regional spore outbreaks &amp; pest alerts
+                    {isHi ? 'क्षेत्रीय कीट व रोग प्रकोप अलर्ट' : 'Regional spore outbreaks & pest alerts'}
                   </span>
                 </div>
                 <input
@@ -498,7 +505,7 @@ export const SettingsPage: React.FC = () => {
                     {t('settings.weeklyReports')}
                   </span>
                   <span className="text-[11px] text-gray-500">
-                    Satellite NDVI vegetative trend digest
+                    {isHi ? 'उपग्रह NDVI वनस्पति विकास रुझान रिपोर्ट' : 'Satellite NDVI vegetative trend digest'}
                   </span>
                 </div>
                 <input
@@ -520,7 +527,7 @@ export const SettingsPage: React.FC = () => {
                     {t('settings.marketUpdates')}
                   </span>
                   <span className="text-[11px] text-gray-500">
-                    e-NAM commodity price trend advisory
+                    {isHi ? 'ई-नाम मंडी भाव व मूल्य रुझान सलाह' : 'e-NAM commodity price trend advisory'}
                   </span>
                 </div>
                 <input
@@ -540,15 +547,15 @@ export const SettingsPage: React.FC = () => {
             {/* Session Management / Log Out */}
             <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
               <span className="text-xs font-bold text-gray-800 block">
-                Session Management
+                {isHi ? 'सत्र प्रबंधन' : 'Session Management'}
               </span>
 
               <p className="text-[11px] text-gray-500">
-                Signed in as{' '}
+                {isHi ? 'लॉग इन ईमेल: ' : 'Signed in as '}
                 <strong className="text-gray-700">
                   {user?.email ?? ''}
                 </strong>{' '}
-                ({isGovt ? 'Govt / Org' : 'Farmer'})
+                ({isGovt ? (isHi ? 'सरकारी / संस्था' : 'Govt / Org') : (isHi ? 'किसान' : 'Farmer')})
               </p>
 
               <button
@@ -557,10 +564,10 @@ export const SettingsPage: React.FC = () => {
                   logout();
                   navigate('/login', { replace: true });
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                className="w-full py-2 px-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Log Out</span>
+                <span>{isHi ? 'लॉग आउट करें' : 'Log Out'}</span>
               </button>
             </div>
           </div>

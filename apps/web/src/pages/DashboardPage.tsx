@@ -78,6 +78,8 @@ export const DashboardPage: React.FC = () => {
     language,
   } = useApp();
 
+  const isHi = language === 'hi';
+
   // Dynamic greeting
   const greetingText = getGreeting(user ?? {}, language, isAuthenticated);
 
@@ -96,35 +98,35 @@ export const DashboardPage: React.FC = () => {
     if (!weather) return '—';
     const h = weather.current.humidity;
     const r = weather.current.rainProbability;
-    if (h > 80 && r > 60) return 'High';
-    if (h > 65 || r > 40) return 'Medium';
-    return 'Low';
+    if (h > 80 && r > 60) return isHi ? 'उच्च' : 'High';
+    if (h > 65 || r > 40) return isHi ? 'मध्यम' : 'Medium';
+    return isHi ? 'कम' : 'Low';
   })();
 
   // Irrigation need from rain probability
   const irrigationNeed = (() => {
     if (!weather) return '—';
     const r = weather.current.rainProbability;
-    if (r > 70) return 'Not Needed';
-    if (r > 40) return 'Low';
-    if (r > 20) return 'Moderate';
-    return 'High';
+    if (r > 70) return isHi ? 'आवश्यक नहीं' : 'Not Needed';
+    if (r > 40) return isHi ? 'कम' : 'Low';
+    if (r > 20) return isHi ? 'मध्यम' : 'Moderate';
+    return isHi ? 'अधिक' : 'High';
   })();
 
   // Outlook from next 3 days of forecast
   const outlook = (() => {
     if (!weather || weather.forecast.length === 0) return '—';
     const maxRain = Math.max(...weather.forecast.slice(0, 3).map((d) => d.rainProbability));
-    if (maxRain > 70) return 'Rainy';
-    if (maxRain > 40) return 'Mixed';
-    return 'Favorable';
+    if (maxRain > 70) return isHi ? 'बारिश' : 'Rainy';
+    if (maxRain > 40) return isHi ? 'मिश्रित' : 'Mixed';
+    return isHi ? 'अनुकूल' : 'Favorable';
   })();
 
   const statCards = [
     {
       value: temp,
       label: t('dashboard.temp'),
-      sublabel: weatherLoading ? 'Fetching...' : hasWeather ? 'Live' : 'Unavailable',
+      sublabel: weatherLoading ? (isHi ? 'लाया जा रहा है...' : 'Fetching...') : hasWeather ? (isHi ? 'लाइव' : 'Live') : (isHi ? 'अनुपलब्ध' : 'Unavailable'),
       icon: Sun,
       color: 'text-amber-500 bg-amber-50 border-amber-100',
       loading: weatherLoading,
@@ -132,7 +134,7 @@ export const DashboardPage: React.FC = () => {
     {
       value: rainProb,
       label: t('dashboard.rainProb'),
-      sublabel: weatherLoading ? 'Fetching...' : hasWeather ? 'Today' : 'Unavailable',
+      sublabel: weatherLoading ? (isHi ? 'लाया जा रहा है...' : 'Fetching...') : hasWeather ? (isHi ? 'आज' : 'Today') : (isHi ? 'अनुपलब्ध' : 'Unavailable'),
       icon: CloudRain,
       color: 'text-sky-500 bg-sky-50 border-sky-100',
       loading: weatherLoading,
@@ -140,7 +142,7 @@ export const DashboardPage: React.FC = () => {
     {
       value: cropHealthValue,
       label: t('dashboard.cropHealth'),
-      sublabel: satellite.ndvi !== null ? 'NDVI Index' : 'Unconfigured',
+      sublabel: satellite.ndvi !== null ? (isHi ? 'NDVI सूचकांक' : 'NDVI Index') : (isHi ? 'कॉन्फ़िगर नहीं' : 'Unconfigured'),
       icon: HeartPulse,
       color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
       loading: false,
@@ -148,7 +150,7 @@ export const DashboardPage: React.FC = () => {
     {
       value: diseaseRisk,
       label: t('dashboard.diseaseRisk'),
-      sublabel: hasWeather ? 'Weather Index' : 'Unavailable',
+      sublabel: hasWeather ? (isHi ? 'मौसम सूचकांक' : 'Weather Index') : (isHi ? 'अनुपलब्ध' : 'Unavailable'),
       icon: ShieldCheck,
       color: 'text-green-600 bg-green-50 border-green-100',
       loading: weatherLoading,
@@ -156,7 +158,7 @@ export const DashboardPage: React.FC = () => {
     {
       value: irrigationNeed,
       label: t('dashboard.irrigationNeed'),
-      sublabel: hasWeather ? 'Precipitation' : 'Unavailable',
+      sublabel: hasWeather ? (isHi ? 'वर्षा / नमी' : 'Precipitation') : (isHi ? 'अनुपलब्ध' : 'Unavailable'),
       icon: Droplets,
       color: 'text-blue-500 bg-blue-50 border-blue-100',
       loading: weatherLoading,
@@ -164,15 +166,19 @@ export const DashboardPage: React.FC = () => {
     {
       value: soil ? `${soil.score}/100` : '—',
       label: t('dashboard.soilHealth'),
-      sublabel: soil ? soil.rating : 'Test Needed',
+      sublabel: soil
+        ? (isHi
+            ? (soil.rating === 'Excellent' ? 'उत्कृष्ट' : soil.rating === 'Good' ? 'अच्छा' : soil.rating === 'Moderate' ? 'मध्यम' : 'खराब')
+            : soil.rating)
+        : (isHi ? 'परीक्षण आवश्यक' : 'Test Needed'),
       icon: Sprout,
       color: 'text-lime-600 bg-lime-50 border-lime-100',
       loading: false,
     },
     {
-      value: satellite.ndvi !== null ? satellite.status : '—',
+      value: satellite.ndvi !== null ? (isHi ? (satellite.status === 'Healthy' ? 'स्वस्थ' : satellite.status === 'Moderate' ? 'मध्यम' : satellite.status) : satellite.status) : '—',
       label: t('dashboard.vegetation'),
-      sublabel: satellite.ndvi !== null ? 'Sentinel-2' : 'Unconfigured',
+      sublabel: satellite.ndvi !== null ? (isHi ? 'सेंटिनल-2' : 'Sentinel-2') : (isHi ? 'कॉन्फ़िगर नहीं' : 'Unconfigured'),
       icon: Activity,
       color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
       loading: false,
@@ -180,7 +186,7 @@ export const DashboardPage: React.FC = () => {
     {
       value: outlook,
       label: t('dashboard.next7Days'),
-      sublabel: hasWeather ? '3-Day Trend' : 'Unavailable',
+      sublabel: hasWeather ? (isHi ? '3-दिवसीय रुझान' : '3-Day Trend') : (isHi ? 'अनुपलब्ध' : 'Unavailable'),
       icon: CalendarCheck,
       color: 'text-teal-600 bg-teal-50 border-teal-100',
       loading: weatherLoading,
@@ -192,8 +198,8 @@ export const DashboardPage: React.FC = () => {
     if (weather?.aiAlert?.description) {
       return {
         available: true,
-        title: t('dashboard.recommendationTitle'),
-        badge: 'Live Weather Advisory',
+        title: isHi ? 'आज की कृषि सलाह' : t('dashboard.recommendationTitle'),
+        badge: isHi ? 'लाइव मौसम सलाह' : 'Live Weather Advisory',
         text: weather.aiAlert.description,
         link: '/app/weather',
       };
@@ -201,17 +207,19 @@ export const DashboardPage: React.FC = () => {
     if (soil?.recommendations && soil.recommendations.length > 0) {
       return {
         available: true,
-        title: 'Soil Health Advisory',
-        badge: 'Soil Test Result',
+        title: isHi ? 'मृदा स्वास्थ्य सलाह' : 'Soil Health Advisory',
+        badge: isHi ? 'मृदा परीक्षण परिणाम' : 'Soil Test Result',
         text: soil.recommendations[0],
         link: '/app/soil',
       };
     }
     return {
       available: false,
-      title: t('dashboard.recommendationTitle'),
-      badge: 'Live Data Unavailable',
-      text: 'Recommendation unavailable — live farm data is currently unavailable. Allow location access or input soil test values to generate tailored recommendations.',
+      title: isHi ? 'आज की कृषि सलाह' : t('dashboard.recommendationTitle'),
+      badge: isHi ? 'लाइव डेटा प्रतीक्षित' : 'Live Data Unavailable',
+      text: isHi
+        ? 'सलाह अनुपलब्ध — वर्तमान में खेत का लाइव डेटा अनुपलब्ध है। स्थान अनुमति दें या व्यक्तिगत सलाह के लिए मिट्टी परीक्षण मान दर्ज करें।'
+        : 'Recommendation unavailable — live farm data is currently unavailable. Allow location access or input soil test values to generate tailored recommendations.',
       link: '/app/weather',
     };
   })();
@@ -237,8 +245,8 @@ export const DashboardPage: React.FC = () => {
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <span className="flex-1">
             {weatherError.includes('Waiting')
-              ? 'Detecting your location to load weather data...'
-              : 'Live weather data is temporarily unavailable. Check backend connection.'}
+              ? (isHi ? 'मौसम डेटा लोड करने के लिए आपका स्थान खोजा जा रहा है...' : 'Detecting your location to load weather data...')
+              : (isHi ? 'लाइव मौसम डेटा अस्थायी रूप से अनुपलब्ध है। बैकएंड कनेक्शन जांचें।' : 'Live weather data is temporarily unavailable. Check backend connection.')}
           </span>
           <button
             onClick={refreshWeather}
@@ -246,7 +254,7 @@ export const DashboardPage: React.FC = () => {
             title="Retry weather fetch"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Retry</span>
+            <span>{isHi ? 'पुनः प्रयास करें' : 'Retry'}</span>
           </button>
         </div>
       )}
@@ -259,7 +267,7 @@ export const DashboardPage: React.FC = () => {
           </h2>
           <span className="text-[11px] text-agri-700 font-medium bg-agri-50 px-2 py-0.5 rounded-md border border-agri-100 flex items-center gap-1">
             {weatherLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            {weatherLoading ? 'Loading...' : weather ? 'Live Data' : 'Awaiting data'}
+            {weatherLoading ? (isHi ? 'लोड हो रहा है...' : 'Loading...') : weather ? (isHi ? 'लाइव डेटा' : 'Live Data') : (isHi ? 'डेटा प्रतीक्षित' : 'Awaiting data')}
           </span>
         </div>
 
@@ -360,7 +368,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 leading-tight">{t('dashboard.analyzeCrop')}</p>
-              <p className="text-[11px] text-gray-400">AI Leaf Scanner</p>
+              <p className="text-[11px] text-gray-400">{isHi ? 'एआई पत्ता स्कैनर' : 'AI Leaf Scanner'}</p>
             </div>
           </Link>
 
@@ -373,7 +381,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 leading-tight">{t('dashboard.checkWeather')}</p>
-              <p className="text-[11px] text-gray-400">5-Day Outlook</p>
+              <p className="text-[11px] text-gray-400">{isHi ? '5-दिवसीय पूर्वानुमान' : '5-Day Outlook'}</p>
             </div>
           </Link>
 
@@ -386,7 +394,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 leading-tight">{t('dashboard.viewFarm')}</p>
-              <p className="text-[11px] text-gray-400">Boundaries &amp; Crop</p>
+              <p className="text-[11px] text-gray-400">{isHi ? 'खेत सीमा व फसल' : 'Boundaries & Crop'}</p>
             </div>
           </Link>
 
@@ -399,7 +407,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 leading-tight">{t('dashboard.askAssistant')}</p>
-              <p className="text-[11px] text-gray-400">GreenAgro AI Assistant</p>
+              <p className="text-[11px] text-gray-400">{isHi ? 'ग्रीनएग्रो एआई सहायक' : 'GreenAgro AI Assistant'}</p>
             </div>
           </Link>
         </div>

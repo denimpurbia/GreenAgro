@@ -20,6 +20,15 @@ import { KnowledgePractice } from '../types';
 
 const FALLBACK_IMAGE = '/images/farmer-hero.jpg';
 
+const COUNTRY_MAP: Record<string, { en: string; hi: string }> = {
+  All: { en: 'All Countries', hi: 'सभी देश' },
+  India: { en: 'India', hi: 'भारत' },
+  Brazil: { en: 'Brazil', hi: 'ब्राजील' },
+  Russia: { en: 'Russia', hi: 'रूस' },
+  China: { en: 'China', hi: 'चीन' },
+  'South Africa': { en: 'South Africa', hi: 'दक्षिण अफ्रीका' },
+};
+
 export const KnowledgePage: React.FC = () => {
   const {
     language,
@@ -30,6 +39,7 @@ export const KnowledgePage: React.FC = () => {
     refreshPractices,
     likePractice,
   } = useApp();
+  const isHi = language === 'hi';
 
   const [selectedCountry, setSelectedCountry] = useState<string>('All');
   const [selectedPractice, setSelectedPractice] = useState<KnowledgePractice | null>(null);
@@ -109,19 +119,22 @@ export const KnowledgePage: React.FC = () => {
 
       {/* ── Country Filter Tabs ────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {countries.map((c) => (
-          <button
-            key={c}
-            onClick={() => handleCountrySelect(c)}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              selectedCountry === c
-                ? 'bg-[#156637] text-white shadow-xs'
-                : 'bg-white text-gray-700 hover:text-[#156637] hover:bg-[#f2f6f2] border border-gray-200'
-            }`}
-          >
-            {c === 'All' ? t('knowledge.all') || 'All' : c}
-          </button>
-        ))}
+        {countries.map((c) => {
+          const countryLabel = isHi ? COUNTRY_MAP[c]?.hi || c : c === 'All' ? t('knowledge.all') || 'All' : c;
+          return (
+            <button
+              key={c}
+              onClick={() => handleCountrySelect(c)}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                selectedCountry === c
+                  ? 'bg-[#156637] text-white shadow-xs'
+                  : 'bg-white text-gray-700 hover:text-[#156637] hover:bg-[#f2f6f2] border border-gray-200'
+              }`}
+            >
+              {countryLabel}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Loading State ──────────────────────────────────────────────────── */}
@@ -145,13 +158,15 @@ export const KnowledgePage: React.FC = () => {
       {!practicesLoading && practicesError && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-3">
           <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
-          <h3 className="font-bold text-sm text-gray-900">Unable to load BRICS practices</h3>
+          <h3 className="font-bold text-sm text-gray-900">
+            {isHi ? 'ब्रिक्स पद्धतियां लोड करने में असमर्थ' : 'Unable to load BRICS practices'}
+          </h3>
           <p className="text-xs text-gray-600">{practicesError}</p>
           <button
             onClick={() => refreshPractices(selectedCountry)}
             className="px-4 py-2 rounded-xl bg-[#156637] text-white text-xs font-semibold cursor-pointer"
           >
-            Try Again
+            {isHi ? 'पुनः प्रयास करें' : 'Try Again'}
           </button>
         </div>
       )}
@@ -160,9 +175,13 @@ export const KnowledgePage: React.FC = () => {
       {!practicesLoading && !practicesError && practices.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center space-y-3">
           <BookOpen className="w-10 h-10 text-gray-400 mx-auto" />
-          <h3 className="font-bold text-base text-gray-900">No practices found</h3>
+          <h3 className="font-bold text-base text-gray-900">
+            {isHi ? 'कोई पद्धति नहीं मिली' : 'No practices found'}
+          </h3>
           <p className="text-xs text-gray-500">
-            No agricultural practices currently documented for {selectedCountry}.
+            {isHi
+              ? `${COUNTRY_MAP[selectedCountry]?.hi || selectedCountry} के लिए अभी कोई कृषि पद्धति दर्ज नहीं है।`
+              : `No agricultural practices currently documented for ${selectedCountry}.`}
           </p>
         </div>
       )}
@@ -187,7 +206,7 @@ export const KnowledgePage: React.FC = () => {
                 />
                 {/* Country badge */}
                 <span className="absolute top-3.5 left-3.5 z-10 bg-white/95 backdrop-blur-xs text-xs font-bold text-gray-900 px-3 py-1 rounded-lg border border-gray-200 shadow-xs">
-                  {practice.country}
+                  {isHi ? COUNTRY_MAP[practice.country]?.hi || practice.country : practice.country}
                 </span>
 
                 {practice.crop && (
@@ -199,7 +218,9 @@ export const KnowledgePage: React.FC = () => {
                 {/* Verified Source Badge */}
                 <span className="absolute bottom-3 left-3 z-10 bg-[#156637]/95 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Verified · {practice.sourceOrganization || practice.evidenceType}</span>
+                  <span>
+                    {isHi ? 'सत्यापित स्रोत' : 'Verified'} · {practice.sourceOrganization || practice.evidenceType}
+                  </span>
                 </span>
               </div>
 
@@ -243,13 +264,13 @@ export const KnowledgePage: React.FC = () => {
                 <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                   <Eye className="w-4 h-4 text-gray-400" />
                   <span>
-                    {practice.views} {language === 'hi' ? 'देखा गया' : 'views'}
+                    {practice.views} {isHi ? 'देखा गया' : 'views'}
                   </span>
                 </span>
 
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] font-semibold text-[#156637] group-hover:underline flex items-center gap-1">
-                    Details ↗
+                    {isHi ? 'विस्तृत विवरण ↗' : 'Details ↗'}
                   </span>
 
                   <button
@@ -258,7 +279,7 @@ export const KnowledgePage: React.FC = () => {
                       likePractice(practice.id);
                     }}
                     className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-rose-600 transition-colors group/btn py-1 px-2 rounded-lg hover:bg-rose-50/60 cursor-pointer"
-                    title="Endorse this agricultural practice"
+                    title={isHi ? 'इस कृषि पद्धति का समर्थन करें' : 'Endorse this agricultural practice'}
                   >
                     <Heart className="w-4 h-4 text-rose-500 group-hover/btn:scale-110 transition-transform fill-rose-50" />
                     <span>{practice.likes}</span>
@@ -293,7 +314,7 @@ export const KnowledgePage: React.FC = () => {
               {/* Top Badges */}
               <div className="absolute top-3.5 left-3.5 right-12 z-10 flex flex-wrap items-center gap-2">
                 <span className="bg-white/95 backdrop-blur-xs text-xs font-bold text-gray-900 px-3 py-1 rounded-lg border border-gray-200 shadow-xs">
-                  {activePractice.country}
+                  {isHi ? COUNTRY_MAP[activePractice.country]?.hi || activePractice.country : activePractice.country}
                 </span>
 
                 <span className="bg-gray-900/80 backdrop-blur-xs text-xs font-medium text-white px-3 py-1 rounded-lg">
@@ -302,7 +323,7 @@ export const KnowledgePage: React.FC = () => {
 
                 <span className="bg-[#156637] backdrop-blur-xs text-xs font-semibold text-white px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                   <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  <span>Verified Source</span>
+                  <span>{isHi ? 'सत्यापित स्रोत' : 'Verified Source'}</span>
                 </span>
               </div>
 
@@ -310,7 +331,7 @@ export const KnowledgePage: React.FC = () => {
               <button
                 onClick={() => setSelectedPractice(null)}
                 className="absolute top-3.5 right-3.5 z-20 p-2 rounded-xl bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs transition-colors cursor-pointer"
-                title="Close modal"
+                title={isHi ? 'बंद करें' : 'Close modal'}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -336,7 +357,9 @@ export const KnowledgePage: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f8faf7] p-2.5 rounded-xl border border-gray-100">
                     <MapPin className="w-4 h-4 text-[#156637] shrink-0" />
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">Location</span>
+                      <span className="block text-[10px] uppercase font-bold text-gray-400">
+                        {isHi ? 'स्थान' : 'Location'}
+                      </span>
                       <span className="font-semibold text-gray-800 truncate">{activePractice.region}</span>
                     </div>
                   </div>
@@ -344,7 +367,9 @@ export const KnowledgePage: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f8faf7] p-2.5 rounded-xl border border-gray-100">
                     <Sprout className="w-4 h-4 text-[#156637] shrink-0" />
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">Target Crop</span>
+                      <span className="block text-[10px] uppercase font-bold text-gray-400">
+                        {isHi ? 'लक्षित फसल' : 'Target Crop'}
+                      </span>
                       <span className="font-semibold text-gray-800 truncate">{activePractice.crop}</span>
                     </div>
                   </div>
@@ -352,7 +377,9 @@ export const KnowledgePage: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f8faf7] p-2.5 rounded-xl border border-gray-100">
                     <Globe className="w-4 h-4 text-[#156637] shrink-0" />
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">Climate Zone</span>
+                      <span className="block text-[10px] uppercase font-bold text-gray-400">
+                        {isHi ? 'जलवायु क्षेत्र' : 'Climate Zone'}
+                      </span>
                       <span className="font-semibold text-gray-800 truncate">{activePractice.climateZone || 'Semi-Arid'}</span>
                     </div>
                   </div>
@@ -360,7 +387,9 @@ export const KnowledgePage: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs text-gray-600 bg-[#f8faf7] p-2.5 rounded-xl border border-gray-100">
                     <CheckCircle2 className="w-4 h-4 text-[#156637] shrink-0" />
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">Evidence Type</span>
+                      <span className="block text-[10px] uppercase font-bold text-gray-400">
+                        {isHi ? 'प्रमाण प्रकार' : 'Evidence Type'}
+                      </span>
                       <span className="font-semibold text-gray-800 truncate">{activePractice.evidenceType}</span>
                     </div>
                   </div>
@@ -371,7 +400,7 @@ export const KnowledgePage: React.FC = () => {
               <section className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-[#156637]" />
-                  Overview
+                  {isHi ? 'परिचय एवं अवलोकन' : 'Overview'}
                 </h4>
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed bg-[#f9faf8] p-4 rounded-xl border border-gray-100">
                   {activePractice.description}
@@ -381,7 +410,7 @@ export const KnowledgePage: React.FC = () => {
               {/* 2. How the practice works */}
               <section className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  How The Practice Works
+                  {isHi ? 'विधि एवं कार्यप्रणाली' : 'How The Practice Works'}
                 </h4>
                 <div className="text-xs sm:text-sm text-gray-700 leading-relaxed bg-white p-4 rounded-xl border border-gray-200/80 shadow-2xs space-y-2">
                   {activePractice.practiceDetails.split('\n').map((paragraph, idx) => (
@@ -395,7 +424,7 @@ export const KnowledgePage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[#156637] flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" />
-                    Verified Research &amp; Evidence
+                    {isHi ? 'सत्यापित शोध एवं वैज्ञानिक प्रमाण' : 'Verified Research & Evidence'}
                   </h4>
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#156637] self-start sm:self-auto">
                     {activePractice.evidenceType}
@@ -405,22 +434,30 @@ export const KnowledgePage: React.FC = () => {
                 <div className="space-y-2 text-xs sm:text-sm text-gray-700">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-2 border-b border-emerald-200/60 text-xs">
                     <div>
-                      <span className="text-gray-500 font-medium">Source Organization:</span>
+                      <span className="text-gray-500 font-medium">
+                        {isHi ? 'स्रोत संस्था:' : 'Source Organization:'}
+                      </span>
                       <p className="font-bold text-gray-900">{activePractice.sourceOrganization}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 font-medium">Publication / Source:</span>
+                      <span className="text-gray-500 font-medium">
+                        {isHi ? 'प्रकाशन / संदर्भ:' : 'Publication / Source:'}
+                      </span>
                       <p className="font-bold text-gray-900">{activePractice.sourceTitle}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 font-medium">Year Documented:</span>
-                      <p className="font-bold text-gray-900">{activePractice.sourceYear || 'Verified'}</p>
+                      <span className="text-gray-500 font-medium">
+                        {isHi ? 'दस्तावेजीकरण वर्ष:' : 'Year Documented:'}
+                      </span>
+                      <p className="font-bold text-gray-900">{activePractice.sourceYear || (isHi ? 'सत्यापित' : 'Verified')}</p>
                     </div>
                   </div>
 
                   {activePractice.researchEvidence && activePractice.researchEvidence.length > 0 && (
                     <div className="pt-2">
-                      <span className="text-xs font-bold text-gray-800">Documented Evidence:</span>
+                      <span className="text-xs font-bold text-gray-800">
+                        {isHi ? 'दस्तावेजी प्रमाण:' : 'Documented Evidence:'}
+                      </span>
                       <ul className="list-disc list-inside mt-1 space-y-1 text-xs text-gray-600">
                         {activePractice.researchEvidence.map((ev, i) => (
                           <li key={i}>{ev}</li>
@@ -437,7 +474,7 @@ export const KnowledgePage: React.FC = () => {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#156637] hover:bg-[#104e2a] text-white font-semibold text-xs transition-all hover:scale-[1.01] active:scale-[0.98] shadow-xs cursor-pointer"
                       >
-                        <span>View Original Source</span>
+                        <span>{isHi ? 'मूल स्रोत देखें' : 'View Original Source'}</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
@@ -449,7 +486,7 @@ export const KnowledgePage: React.FC = () => {
               {activePractice.expectedBenefit && (
                 <section className="space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                    Why It Matters (Evidence-Supported Benefits)
+                    {isHi ? 'यह क्यों महत्वपूर्ण है (प्रमाणित लाभ)' : 'Why It Matters (Evidence-Supported Benefits)'}
                   </h4>
                   <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-100 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed">
                     {activePractice.expectedBenefit}
@@ -461,12 +498,14 @@ export const KnowledgePage: React.FC = () => {
               {activePractice.bricsRelevance && (
                 <section className="space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                    BRICS Knowledge Relevance
+                    {isHi ? 'ब्रिक्स ज्ञान प्रासंगिकता' : 'BRICS Knowledge Relevance'}
                   </h4>
                   <div className="p-4 rounded-xl bg-sky-50/60 border border-sky-100 text-xs sm:text-sm text-sky-950 leading-relaxed">
                     <p>{activePractice.bricsRelevance}</p>
                     <p className="mt-1 text-[11px] text-sky-700 italic">
-                      Presented as knowledge-sharing relevance; actual agronomic suitability must be evaluated based on local conditions.
+                      {isHi
+                        ? 'ज्ञान-साझाकरण संदर्भ के रूप में प्रस्तुत; वास्तविक अनुकूलता स्थानीय परिस्थितियों पर निर्भर करती है।'
+                        : 'Presented as knowledge-sharing relevance; actual agronomic suitability must be evaluated based on local conditions.'}
                     </p>
                   </div>
                 </section>
@@ -475,11 +514,13 @@ export const KnowledgePage: React.FC = () => {
               {/* 6. Adaptation for Farmers */}
               <section className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  Adaptation For Farmers
+                  {isHi ? 'किसानों के लिए व्यावहारिक अनुकूलन' : 'Adaptation For Farmers'}
                 </h4>
                 <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/60 text-xs sm:text-sm text-amber-900 leading-relaxed space-y-1.5">
                   <p className="font-semibold text-amber-950">
-                    Potentially adaptable where local soil, climate, water availability and farming systems are suitable.
+                    {isHi
+                      ? 'स्थानीय मिट्टी, जलवायु, जल उपलब्धता और फसल प्रणाली के अनुसार अपनाने योग्य।'
+                      : 'Potentially adaptable where local soil, climate, water availability and farming systems are suitable.'}
                   </p>
                   {activePractice.adaptationNotes && (
                     <p className="text-amber-800 text-xs">{activePractice.adaptationNotes}</p>
@@ -490,14 +531,19 @@ export const KnowledgePage: React.FC = () => {
               {/* 7. Provenance & Attribution */}
               <section className="pt-4 border-t border-gray-100 text-[11px] text-gray-500 space-y-2">
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  Data Provenance &amp; Attribution
+                  {isHi ? 'डेटा स्रोत एवं संदर्भ प्रमाण' : 'Data Provenance & Attribution'}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
                   <div>
-                    <span className="font-semibold text-gray-700">Repository Citation:</span> {activePractice.sourceTitle}
+                    <span className="font-semibold text-gray-700">
+                      {isHi ? 'संग्रह संदर्भ:' : 'Repository Citation:'}
+                    </span>{' '}
+                    {activePractice.sourceTitle}
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-700">Source Link:</span>{' '}
+                    <span className="font-semibold text-gray-700">
+                      {isHi ? 'स्रोत लिंक:' : 'Source Link:'}
+                    </span>{' '}
                     <a
                       href={activePractice.sourceUrl}
                       target="_blank"
@@ -508,10 +554,16 @@ export const KnowledgePage: React.FC = () => {
                     </a>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-700">Image License:</span> {activePractice.imageLicense || 'Open/Verified'}
+                    <span className="font-semibold text-gray-700">
+                      {isHi ? 'छवि लाइसेंस:' : 'Image License:'}
+                    </span>{' '}
+                    {activePractice.imageLicense || (isHi ? 'सत्यापित / खुला' : 'Open/Verified')}
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-700">Photo Credit:</span> {activePractice.imageAttribution || 'Documented research site'}
+                    <span className="font-semibold text-gray-700">
+                      {isHi ? 'फोटो क्रेडिट:' : 'Photo Credit:'}
+                    </span>{' '}
+                    {activePractice.imageAttribution || (isHi ? 'दस्तावेजीकृत शोध स्थल' : 'Documented research site')}
                   </div>
                 </div>
               </section>
@@ -524,14 +576,14 @@ export const KnowledgePage: React.FC = () => {
                 className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-700 hover:text-rose-600 transition-colors py-2 px-3 rounded-xl bg-white border border-gray-200 hover:bg-rose-50/60 cursor-pointer shadow-2xs"
               >
                 <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
-                <span>Endorse ({activePractice.likes})</span>
+                <span>{isHi ? 'समर्थन दें' : 'Endorse'} ({activePractice.likes})</span>
               </button>
 
               <button
                 onClick={() => setSelectedPractice(null)}
                 className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-xs sm:text-sm cursor-pointer transition-colors"
               >
-                Close
+                {isHi ? 'बंद करें' : 'Close'}
               </button>
             </div>
           </div>
@@ -543,7 +595,9 @@ export const KnowledgePage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <h3 className="font-bold text-base text-gray-900">Share Agricultural Practice</h3>
+              <h3 className="font-bold text-base text-gray-900">
+                {isHi ? 'कृषि पद्धति साझा करें' : 'Share Agricultural Practice'}
+              </h3>
               <button
                 onClick={() => setIsShareModalOpen(false)}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-700 cursor-pointer"
@@ -554,28 +608,34 @@ export const KnowledgePage: React.FC = () => {
 
             <div className="space-y-3 pt-4 text-xs text-gray-700">
               <div>
-                <label className="block font-bold mb-1">Practice Title</label>
+                <label className="block font-bold mb-1">
+                  {isHi ? 'पद्धति का नाम' : 'Practice Title'}
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Traditional Contour Bunding"
+                  placeholder={isHi ? 'उदा. पारंपरिक मेड़बंदी (Contour Bunding)' : 'e.g. Traditional Contour Bunding'}
                   className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl p-2.5 text-xs focus:outline-hidden focus:border-[#156637]"
                 />
               </div>
               <div>
-                <label className="block font-bold mb-1">Target Country / Region</label>
+                <label className="block font-bold mb-1">
+                  {isHi ? 'लक्षित देश / क्षेत्र' : 'Target Country / Region'}
+                </label>
                 <select className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl p-2.5 text-xs focus:outline-hidden focus:border-[#156637]">
-                  <option>India</option>
-                  <option>Brazil</option>
-                  <option>Russia</option>
-                  <option>China</option>
-                  <option>South Africa</option>
+                  <option value="India">{isHi ? 'भारत (India)' : 'India'}</option>
+                  <option value="Brazil">{isHi ? 'ब्राजील (Brazil)' : 'Brazil'}</option>
+                  <option value="Russia">{isHi ? 'रूस (Russia)' : 'Russia'}</option>
+                  <option value="China">{isHi ? 'चीन (China)' : 'China'}</option>
+                  <option value="South Africa">{isHi ? 'दक्षिण अफ्रीका (South Africa)' : 'South Africa'}</option>
                 </select>
               </div>
               <div>
-                <label className="block font-bold mb-1">Description &amp; Expected Benefit</label>
+                <label className="block font-bold mb-1">
+                  {isHi ? 'विवरण एवं अपेक्षित लाभ' : 'Description & Expected Benefit'}
+                </label>
                 <textarea
                   rows={3}
-                  placeholder="Describe agro-ecological benefits..."
+                  placeholder={isHi ? 'कृषि-पारिस्थितिक लाभों का वर्णन करें...' : 'Describe agro-ecological benefits...'}
                   className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl p-2.5 text-xs focus:outline-hidden focus:border-[#156637]"
                 />
               </div>
@@ -586,14 +646,14 @@ export const KnowledgePage: React.FC = () => {
                   onClick={() => setIsShareModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
-                  Cancel
+                  {isHi ? 'रद्द करें' : 'Cancel'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsShareModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-[#156637] text-white font-semibold hover:bg-[#104e2a] cursor-pointer"
                 >
-                  Submit Practice
+                  {isHi ? 'पद्धति जमा करें' : 'Submit Practice'}
                 </button>
               </div>
             </div>

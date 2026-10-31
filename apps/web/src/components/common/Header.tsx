@@ -341,7 +341,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-xs font-bold text-gray-900 leading-tight">{user?.name ?? ''}</span>
                 <span className="text-[11px] text-gray-500 leading-tight">
-                  {user?.role === 'govt_org' ? 'Govt / Org' : 'Farmer'}
+                  {user?.role === 'govt_org'
+                    ? (isHi ? 'प्रशासन / संस्था' : 'Govt / Org')
+                    : (isHi ? 'किसान' : 'Farmer')}
                 </span>
               </div>
             </Link>

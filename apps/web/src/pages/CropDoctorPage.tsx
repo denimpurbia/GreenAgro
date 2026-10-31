@@ -138,6 +138,8 @@ export const CropDoctorPage: React.FC = () => {
     }
   };
 
+  const isHi = language === 'hi';
+
   const severityColor = (severity?: string) => {
     switch (severity) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
@@ -206,7 +208,9 @@ export const CropDoctorPage: React.FC = () => {
               ) : (
                 <div className="flex flex-col items-center gap-2 text-gray-400">
                   <Stethoscope className="w-10 h-10" />
-                  <span className="text-xs font-medium">Upload a leaf image to analyze</span>
+                  <span className="text-xs font-medium">
+                    {isHi ? 'विश्लेषण के लिए पत्ते की फोटो अपलोड करें' : 'Upload a leaf image to analyze'}
+                  </span>
                 </div>
               )}
 
@@ -214,7 +218,7 @@ export const CropDoctorPage: React.FC = () => {
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-2 p-4 text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-agri-400" />
                   <span className="text-xs font-semibold">
-                    Analyzing with Google Gemini Vision...
+                    {isHi ? 'गूगल जेमिनी विज़न से विश्लेषण किया जा रहा है...' : 'Analyzing with Google Gemini Vision...'}
                   </span>
                 </div>
               )}
@@ -222,18 +226,18 @@ export const CropDoctorPage: React.FC = () => {
               {previewUrl && !isAnalyzing && (
                 <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] text-white flex items-center justify-between">
                   <span>
-                    Subject:{' '}
+                    {isHi ? 'विषय: ' : 'Subject: '}
                     {disease?.cropIdentificationStatus === 'identified' && disease.identifiedCrop
-                      ? `${disease.identifiedCrop} Leaf`
+                      ? `${disease.identifiedCrop} ${isHi ? 'पत्ती' : 'Leaf'}`
                       : disease?.cropIdentificationStatus === 'uncertain'
-                      ? 'Crop identification uncertain'
+                      ? (isHi ? 'फसल की पहचान अनिश्चित' : 'Crop identification uncertain')
                       : disease?.cropIdentificationStatus === 'not_a_crop_leaf'
-                      ? 'Image not suitable for crop diagnosis'
+                      ? (isHi ? 'फोटो फसल रोग निदान के लिए उपयुक्त नहीं है' : 'Image not suitable for crop diagnosis')
                       : disease?.cropIdentificationStatus === 'unknown'
-                      ? 'Unknown Leaf'
-                      : 'Crop identification pending'}
+                      ? (isHi ? 'अज्ञात पत्ती' : 'Unknown Leaf')
+                      : (isHi ? 'फसल पहचान प्रतीक्षित' : 'Crop identification pending')}
                   </span>
-                  <span className="text-emerald-400 font-bold">Ready</span>
+                  <span className="text-emerald-400 font-bold">{isHi ? 'तैयार' : 'Ready'}</span>
                 </div>
               )}
             </div>
@@ -241,10 +245,10 @@ export const CropDoctorPage: React.FC = () => {
             {previewUrl && !isAnalyzing && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-3 inline-flex items-center gap-1.5 text-xs text-agri-700 font-semibold hover:text-agri-900"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-agri-700 font-semibold hover:text-agri-900 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Upload different image</span>
+                <span>{isHi ? 'दूसरी फोटो अपलोड करें' : 'Upload different image'}</span>
               </button>
             )}
           </div>
@@ -264,7 +268,11 @@ export const CropDoctorPage: React.FC = () => {
             {!previewUrl && !isAnalyzing && !disease && !diagnosisError && !apiNotConfigured && (
               <div className="flex flex-col items-center justify-center py-8 text-center text-gray-400">
                 <Stethoscope className="w-8 h-8 mb-2 text-gray-300" />
-                <p className="text-xs">Upload a leaf image to get an AI-powered disease diagnosis.</p>
+                <p className="text-xs">
+                  {isHi
+                    ? 'एआई-संचालित रोग निदान प्राप्त करने के लिए प्रभावित पत्ती की तस्वीर अपलोड करें।'
+                    : 'Upload a leaf image to get an AI-powered disease diagnosis.'}
+                </p>
               </div>
             )}
 
@@ -272,7 +280,9 @@ export const CropDoctorPage: React.FC = () => {
             {isAnalyzing && (
               <div className="flex flex-col items-center justify-center py-8 gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-agri-600" />
-                <p className="text-xs text-gray-500">Gemini is analyzing the image...</p>
+                <p className="text-xs text-gray-500">
+                  {isHi ? 'जेमिनी फोटो का विश्लेषण कर रहा है...' : 'Gemini is analyzing the image...'}
+                </p>
               </div>
             )}
 
@@ -283,9 +293,13 @@ export const CropDoctorPage: React.FC = () => {
                   <Settings className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-800">Crop Diagnosis Not Configured</p>
+                  <p className="text-xs font-bold text-gray-800">
+                    {isHi ? 'फसल निदान अभी सेट नहीं है' : 'Crop Diagnosis Not Configured'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Set <code className="bg-gray-100 px-1 rounded">GEMINI_API_KEY</code> in your server .env file to enable AI-powered disease detection.
+                    {isHi
+                      ? 'एआई फसल रोग पहचान सक्रिय करने हेतु सर्वर में GEMINI_API_KEY सेट करें।'
+                      : 'Set GEMINI_API_KEY in your server .env file to enable AI-powered disease detection.'}
                   </p>
                 </div>
               </div>
@@ -296,13 +310,13 @@ export const CropDoctorPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-red-800">Diagnosis Failed</p>
+                  <p className="text-xs font-bold text-red-800">{isHi ? 'निदान विफल' : 'Diagnosis Failed'}</p>
                   <p className="text-xs text-red-600 mt-0.5">{diagnosisError}</p>
                   <button
                     onClick={() => previewUrl && fileInputRef.current?.click()}
-                    className="mt-2 text-xs text-red-700 font-semibold underline"
+                    className="mt-2 text-xs text-red-700 font-semibold underline cursor-pointer"
                   >
-                    Try again
+                    {isHi ? 'पुनः प्रयास करें' : 'Try again'}
                   </button>
                 </div>
               </div>
@@ -316,7 +330,12 @@ export const CropDoctorPage: React.FC = () => {
                     {disease.diseaseName}
                   </span>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${severityColor(disease.severity)}`}>
-                    {disease.confidence}
+                    {isHi
+                      ? (disease.confidence === 'High Confidence' ? 'उच्च सटीकता'
+                          : (disease.confidence as string) === 'Moderate Confidence' || (disease.confidence as string) === 'Medium Confidence' ? 'मध्यम सटीकता'
+                          : disease.confidence === 'Low Confidence' ? 'कम सटीकता'
+                          : disease.confidence)
+                      : disease.confidence}
                   </span>
                   {disease.confidenceScore > 0 && (
                     <span className="text-[11px] text-gray-500">{disease.confidenceScore}%</span>

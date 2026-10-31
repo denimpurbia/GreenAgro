@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, CalendarDays } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 
 interface LocationDateCardProps {
   location?: string;
@@ -12,13 +13,41 @@ export const LocationDateCard: React.FC<LocationDateCardProps> = ({
   date,
   className = '',
 }) => {
+  const { language } = useApp();
+  const isHi = language === 'hi';
+
   const displayDate =
     date ||
-    new Date().toLocaleDateString('en-IN', {
+    new Date().toLocaleDateString(isHi ? 'hi-IN' : 'en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
+
+  const displayLocation = (() => {
+    if (!isHi) return location;
+    return location
+      .replace(/Udaipur/gi, 'उदयपुर')
+      .replace(/Rajasthan/gi, 'राजस्थान')
+      .replace(/India/gi, 'भारत')
+      .replace(/Badgaon/gi, 'बड़गांव')
+      .replace(/Girwa/gi, 'गिर्वा')
+      .replace(/Mavli/gi, 'मावली')
+      .replace(/Gogunda/gi, 'गोगुंदा')
+      .replace(/Vallabhnagar/gi, 'वल्लभनगर')
+      .replace(/Salumbar/gi, 'सलूम्बर')
+      .replace(/Thur/gi, 'थूर')
+      .replace(/Dabok/gi, 'डबोक')
+      .replace(/Fatehnagar/gi, 'फतहनगर')
+      .replace(/Kherwara/gi, 'खैरवाड़ा')
+      .replace(/Kotra/gi, 'कोटड़ा')
+      .replace(/Jhadol/gi, 'झाड़ोल')
+      .replace(/Rajsamand/gi, 'राजसमंद')
+      .replace(/Chittorgarh/gi, 'चित्तौड़गढ़')
+      .replace(/Dungarpur/gi, 'डूंगरपुर')
+      .replace(/Banswara/gi, 'बांसवाड़ा')
+      .replace(/Pratapgarh/gi, 'प्रतापगढ़');
+  })();
 
   return (
     <div
@@ -31,7 +60,7 @@ export const LocationDateCard: React.FC<LocationDateCardProps> = ({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-semibold text-gray-900">
-            {location}
+            {displayLocation}
           </p>
         </div>
 

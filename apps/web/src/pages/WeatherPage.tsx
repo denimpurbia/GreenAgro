@@ -139,8 +139,40 @@ const getCondition = (weather: AnyRecord): string => {
   );
 };
 
+const translateCondition = (cond: string, isHi: boolean): string => {
+  if (!isHi) return cond;
+  const lower = cond.toLowerCase();
+  if (lower.includes('clear')) return 'साफ आसमान';
+  if (lower.includes('few clouds') || lower.includes('partly')) return 'आंशिक बादल';
+  if (lower.includes('overcast') || lower.includes('cloudy')) return 'घने बादल';
+  if (lower.includes('thunderstorm') || lower.includes('storm')) return 'गरज के साथ बारिश';
+  if (lower.includes('heavy rain')) return 'भारी बारिश';
+  if (lower.includes('light rain') || lower.includes('drizzle') || lower.includes('shower')) return 'हल्की बारिश / बौछारें';
+  if (lower.includes('rain')) return 'वर्षा / बारिश';
+  if (lower.includes('fog') || lower.includes('mist')) return 'कोहरा / धुंध';
+  if (lower.includes('sunny')) return 'साफ धूप';
+  if (lower.includes('windy')) return 'तेज हवा';
+  if (lower === 'current conditions' || lower === 'forecast') return 'वर्तमान मौसम';
+  return cond;
+};
+
+const translateDayName = (dayStr: string, isHi: boolean): string => {
+  if (!isHi) return dayStr;
+  const map: Record<string, string> = {
+    Sun: 'रविवार',
+    Mon: 'सोमवार',
+    Tue: 'मंगलवार',
+    Wed: 'बुधवार',
+    Thu: 'गुरुवार',
+    Fri: 'शुक्रवार',
+    Sat: 'शनिवार',
+  };
+  return map[dayStr] || dayStr;
+};
+
 export const WeatherPage: React.FC = () => {
   const app = useApp() as AnyRecord;
+  const isHi = app.language === 'hi';
 
   const farm = app.farm;
 
@@ -314,7 +346,7 @@ export const WeatherPage: React.FC = () => {
             <CloudSun className="w-7 h-7 text-[#156637]" />
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f291e]">
-              Farm Weather
+              {isHi ? 'खेत का मौसम' : 'Farm Weather'}
             </h1>
           </div>
 
@@ -339,7 +371,7 @@ export const WeatherPage: React.FC = () => {
           type="button"
           onClick={handleRefresh}
           disabled={isLoading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#156637] hover:bg-[#104e2a] text-white text-sm font-semibold shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#156637] hover:bg-[#104e2a] text-white text-sm font-semibold shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           <RefreshCw
             className={`w-4 h-4 ${
@@ -347,7 +379,9 @@ export const WeatherPage: React.FC = () => {
             }`}
           />
 
-          {isLoading ? 'Updating...' : 'Refresh Weather'}
+          {isLoading
+            ? (isHi ? 'अपडेट हो रहा है...' : 'Updating...')
+            : (isHi ? 'मौसम ताज़ा करें' : 'Refresh Weather')}
         </button>
       </div>
 
@@ -359,21 +393,22 @@ export const WeatherPage: React.FC = () => {
           </div>
 
           <h2 className="text-lg font-bold text-gray-900">
-            Weather data unavailable
+            {isHi ? 'मौसम डेटा अनुपलब्ध' : 'Weather data unavailable'}
           </h2>
 
           <p className="text-sm text-gray-500 max-w-md mx-auto mt-2">
-            We could not load current weather information for your farm.
-            Make sure your farm has valid coordinates and try refreshing.
+            {isHi
+              ? 'आपके खेत के लिए वर्तमान मौसम डेटा लोड नहीं हो सका। सुनिश्चित करें कि खेत के निर्देशांक सही हैं और पुनः प्रयास करें।'
+              : 'We could not load current weather information for your farm. Make sure your farm has valid coordinates and try refreshing.'}
           </p>
 
           <button
             type="button"
             onClick={handleRefresh}
-            className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#156637] text-white text-sm font-semibold hover:bg-[#104e2a]"
+            className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#156637] text-white text-sm font-semibold hover:bg-[#104e2a] cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
-            Try Again
+            {isHi ? 'पुनः प्रयास करें' : 'Try Again'}
           </button>
         </div>
       )}
@@ -387,7 +422,7 @@ export const WeatherPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Current Weather
+                    {isHi ? 'वर्तमान मौसम' : 'Current Weather'}
                   </p>
 
                   <div className="flex items-center gap-4 mt-3">
@@ -407,7 +442,7 @@ export const WeatherPage: React.FC = () => {
                       </div>
 
                       <p className="text-sm font-semibold text-gray-700 capitalize mt-1">
-                        {condition}
+                        {translateCondition(condition, isHi)}
                       </p>
                     </div>
                   </div>
@@ -415,7 +450,7 @@ export const WeatherPage: React.FC = () => {
 
                 <div className="bg-white rounded-2xl border border-gray-100 p-4 min-w-[150px]">
                   <p className="text-xs text-gray-500">
-                    Feels Like
+                    {isHi ? 'महसूस तापमान' : 'Feels Like'}
                   </p>
 
                   <p className="text-2xl font-extrabold text-gray-900 mt-1">
@@ -431,7 +466,7 @@ export const WeatherPage: React.FC = () => {
                 <MapPin className="w-5 h-5 text-[#156637]" />
 
                 <h2 className="font-bold text-gray-900">
-                  Farm Location
+                  {isHi ? 'खेत का स्थान' : 'Farm Location'}
                 </h2>
               </div>
 
@@ -446,14 +481,14 @@ export const WeatherPage: React.FC = () => {
                 </p>
               ) : (
                 <p className="text-xs text-red-500 mt-2">
-                  Farm coordinates unavailable
+                  {isHi ? 'खेत के निर्देशांक अनुपलब्ध' : 'Farm coordinates unavailable'}
                 </p>
               )}
 
               {farm?.primaryCrop && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-xs text-gray-500">
-                    Primary Crop
+                    {isHi ? 'मुख्य फसल' : 'Primary Crop'}
                   </p>
 
                   <p className="text-sm font-bold text-gray-900 mt-1 capitalize">
@@ -467,7 +502,7 @@ export const WeatherPage: React.FC = () => {
           {/* WEATHER DETAILS */}
           <div>
             <h2 className="text-lg font-bold text-[#0f291e] mb-3">
-              Current Conditions
+              {isHi ? 'वर्तमान वायुमंडलीय स्थिति' : 'Current Conditions'}
             </h2>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -479,7 +514,7 @@ export const WeatherPage: React.FC = () => {
                   </div>
 
                   <span className="text-[10px] font-semibold text-gray-400 uppercase">
-                    Humidity
+                    {isHi ? 'आर्द्रता (नमी)' : 'Humidity'}
                   </span>
                 </div>
 
@@ -488,7 +523,7 @@ export const WeatherPage: React.FC = () => {
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Relative humidity
+                  {isHi ? 'सापेक्ष आर्द्रता' : 'Relative humidity'}
                 </p>
               </div>
 
@@ -500,14 +535,14 @@ export const WeatherPage: React.FC = () => {
                   </div>
 
                   <span className="text-[10px] font-semibold text-gray-400 uppercase">
-                    Wind
+                    {isHi ? 'हवा की गति' : 'Wind'}
                   </span>
                 </div>
 
                 <p className="text-2xl font-extrabold text-gray-900 mt-3">
                   {formatNumber(windSpeed, 1)}
                   <span className="text-sm font-semibold text-gray-500 ml-1">
-                    km/h
+                    {isHi ? 'किमी/घंटा' : 'km/h'}
                   </span>
                 </p>
 
@@ -525,7 +560,7 @@ export const WeatherPage: React.FC = () => {
                   </div>
 
                   <span className="text-[10px] font-semibold text-gray-400 uppercase">
-                    Rain
+                    {isHi ? 'वर्षा' : 'Rain'}
                   </span>
                 </div>
 
@@ -537,7 +572,7 @@ export const WeatherPage: React.FC = () => {
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Recent precipitation
+                  {isHi ? 'हाल की वर्षा' : 'Recent precipitation'}
                 </p>
               </div>
 
@@ -549,7 +584,7 @@ export const WeatherPage: React.FC = () => {
                   </div>
 
                   <span className="text-[10px] font-semibold text-gray-400 uppercase">
-                    Pressure
+                    {isHi ? 'वायु दबाव' : 'Pressure'}
                   </span>
                 </div>
 
@@ -561,7 +596,7 @@ export const WeatherPage: React.FC = () => {
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Atmospheric pressure
+                  {isHi ? 'वायुमंडलीय दबाव' : 'Atmospheric pressure'}
                 </p>
               </div>
             </div>
@@ -576,7 +611,7 @@ export const WeatherPage: React.FC = () => {
 
               <div>
                 <p className="text-xs text-gray-500">
-                  Temperature
+                  {isHi ? 'तापमान' : 'Temperature'}
                 </p>
 
                 <p className="font-bold text-gray-900">
@@ -592,7 +627,7 @@ export const WeatherPage: React.FC = () => {
 
               <div>
                 <p className="text-xs text-gray-500">
-                  Visibility
+                  {isHi ? 'दृश्यता' : 'Visibility'}
                 </p>
 
                 <p className="font-bold text-gray-900">
@@ -608,7 +643,7 @@ export const WeatherPage: React.FC = () => {
 
               <div>
                 <p className="text-xs text-gray-500">
-                  UV Index
+                  {isHi ? 'यूवी इंडेक्स' : 'UV Index'}
                 </p>
 
                 <p className="font-bold text-gray-900">
@@ -627,15 +662,13 @@ export const WeatherPage: React.FC = () => {
 
               <div>
                 <h2 className="font-bold text-[#0f291e]">
-                  Farm Weather Note
+                  {isHi ? 'खेत मौसम कृषि सलाह' : 'Farm Weather Note'}
                 </h2>
 
                 <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                  Current weather conditions are being shown for
-                  your configured farm location. Use the latest
-                  rainfall, temperature, humidity and wind
-                  information when planning irrigation and field
-                  activities.
+                  {isHi
+                    ? 'यह मौसम डेटा आपके वास्तविक खेत स्थान के अनुसार दिखाया जा रहा है। सिंचाई, कीटनाशक छिड़काव और अन्य कृषि कार्यों की योजना बनाते समय वर्तमान वर्षा, तापमान, आर्द्रता और हवा की गति का ध्यान रखें।'
+                    : 'Current weather conditions are being shown for your configured farm location. Use the latest rainfall, temperature, humidity and wind information when planning irrigation and field activities.'}
                 </p>
               </div>
             </div>
@@ -647,11 +680,13 @@ export const WeatherPage: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-lg font-bold text-[#0f291e]">
-                    Weather Forecast
+                    {isHi ? '7-दिवसीय मौसम पूर्वानुमान' : 'Weather Forecast'}
                   </h2>
 
                   <p className="text-xs text-gray-500">
-                    Forecast returned by the configured weather provider
+                    {isHi
+                      ? 'स्थानीय मौसम सेवा द्वारा 7 दिनों का मौसम पूर्वानुमान'
+                      : 'Forecast returned by the configured weather provider'}
                   </p>
                 </div>
               </div>
@@ -698,18 +733,19 @@ export const WeatherPage: React.FC = () => {
                       day.time
                     );
 
-                    let dayLabel = `Day ${index + 1}`;
+                    let dayLabel = isHi ? `दिन ${index + 1}` : `Day ${index + 1}`;
 
                     if (date) {
                       const parsedDate = new Date(date);
 
                       if (!Number.isNaN(parsedDate.getTime())) {
-                        dayLabel = parsedDate.toLocaleDateString(
+                        const rawShort = parsedDate.toLocaleDateString(
                           'en-IN',
                           {
                             weekday: 'short',
                           }
                         );
+                        dayLabel = translateDayName(rawShort, isHi);
                       }
                     }
 
@@ -730,19 +766,20 @@ export const WeatherPage: React.FC = () => {
 
                         {dayMin !== null && (
                           <p className="text-xs text-gray-500 mt-1">
-                            Low {formatNumber(dayMin, 0)}°
+                            {isHi ? 'न्यूनतम ' : 'Low '}
+                            {formatNumber(dayMin, 0)}°
                           </p>
                         )}
 
                         <p className="text-[10px] text-gray-500 mt-2 capitalize line-clamp-2">
-                          {dayCondition}
+                          {translateCondition(dayCondition, isHi)}
                         </p>
 
                         {dayRain !== null && (
                           <div className="flex items-center gap-1 mt-3 text-[10px] text-blue-600 font-semibold">
                             <Droplets className="w-3 h-3" />
 
-                            {formatNumber(dayRain)}% rain
+                            {formatNumber(dayRain)}% {isHi ? 'बारिश' : 'rain'}
                           </div>
                         )}
                       </div>

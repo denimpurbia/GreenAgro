@@ -3,7 +3,8 @@ import { Sparkles, ArrowRight, Loader2, FlaskConical } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const SoilHealthPage: React.FC = () => {
-  const { t, soil, soilLoading, calculateSoilScore } = useApp();
+  const { t, soil, soilLoading, calculateSoilScore, language } = useApp();
+  const isHi = language === 'hi';
 
   // Form starts EMPTY — no fake pre-filled Udaipur soil values
   const [soilType, setSoilType] = useState('');
@@ -49,17 +50,19 @@ export const SoilHealthPage: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Soil Type</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  {isHi ? 'मिट्टी का प्रकार' : 'Soil Type'}
+                </label>
                 <select
                   value={soilType}
                   onChange={(e) => setSoilType(e.target.value)}
                   className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 focus:outline-hidden focus:border-agri-600"
                 >
-                  <option value="">Select soil type</option>
-                  <option value="Loamy">Loamy</option>
-                  <option value="Sandy Loam">Sandy Loam</option>
-                  <option value="Clay">Clay</option>
-                  <option value="Black Soil">Black Soil</option>
+                  <option value="">{isHi ? 'मिट्टी का प्रकार चुनें' : 'Select soil type'}</option>
+                  <option value="Loamy">{isHi ? 'दोमट (Loamy)' : 'Loamy'}</option>
+                  <option value="Sandy Loam">{isHi ? 'बलुई दोमट (Sandy Loam)' : 'Sandy Loam'}</option>
+                  <option value="Clay">{isHi ? 'चिकनी (Clay)' : 'Clay'}</option>
+                  <option value="Black Soil">{isHi ? 'काली मिट्टी (Black Soil)' : 'Black Soil'}</option>
                 </select>
               </div>
 
@@ -72,7 +75,7 @@ export const SoilHealthPage: React.FC = () => {
                   step="0.1"
                   min="0"
                   max="14"
-                  placeholder="Enter soil pH (0–14)"
+                  placeholder={isHi ? 'मिट्टी का पीएच दर्ज करें (0–14)' : 'Enter soil pH (0–14)'}
                   value={ph}
                   onChange={(e) => setPh(e.target.value)}
                   className="w-full bg-[#f8faf7] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 focus:outline-hidden focus:border-agri-600"
@@ -150,7 +153,7 @@ export const SoilHealthPage: React.FC = () => {
                 {soilLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Computing Soil Index...</span>
+                    <span>{isHi ? 'मृदा स्वास्थ्य सूचकांक गणना जारी...' : 'Computing Soil Index...'}</span>
                   </>
                 ) : (
                   <>
@@ -174,8 +177,16 @@ export const SoilHealthPage: React.FC = () => {
                 <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-4">
                   <FlaskConical className="w-8 h-8 text-gray-300" />
                 </div>
-                <p className="text-sm font-medium text-gray-500">Enter soil parameters to calculate your soil health index.</p>
-                <p className="text-xs text-gray-400 mt-1">Results will appear here after you submit the form.</p>
+                <p className="text-sm font-medium text-gray-500">
+                  {isHi
+                    ? 'अपनी मृदा स्वास्थ्य सूचकांक की गणना के लिए मिट्टी के पैरामीटर दर्ज करें।'
+                    : 'Enter soil parameters to calculate your soil health index.'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {isHi
+                    ? 'फॉर्म जमा करने के बाद परिणाम यहाँ दिखाई देंगे।'
+                    : 'Results will appear here after you submit the form.'}
+                </p>
               </div>
             )}
 
@@ -183,7 +194,9 @@ export const SoilHealthPage: React.FC = () => {
             {soilLoading && (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-agri-600" />
-                <p className="text-xs text-gray-500">Computing soil health index...</p>
+                <p className="text-xs text-gray-500">
+                  {isHi ? 'मृदा स्वास्थ्य सूचकांक की गणना की जा रही है...' : 'Computing soil health index...'}
+                </p>
               </div>
             )}
 
@@ -213,7 +226,9 @@ export const SoilHealthPage: React.FC = () => {
                         {soil!.score} / 100
                       </span>
                       <span className="text-xs font-semibold text-agri-700 bg-agri-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-agri-200/60">
-                        {soil!.rating}
+                        {isHi
+                          ? (soil!.rating === 'Excellent' ? 'उत्कृष्ट' : soil!.rating === 'Good' ? 'अच्छा' : soil!.rating === 'Moderate' ? 'मध्यम' : 'खराब')
+                          : soil!.rating}
                       </span>
                     </div>
                   </div>
@@ -225,36 +240,58 @@ export const SoilHealthPage: React.FC = () => {
                     {t('soil.nutrientStatus')}
                   </h3>
                   <div className="space-y-2 pt-1">
-                    {soil!.nutrients.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="font-medium text-gray-700">{item.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500 text-xs">
-                            {item.value} {item.unit}
-                          </span>
-                          <span
-                            className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-                              item.color === 'red'
-                                ? 'bg-red-50 text-red-700 border border-red-200'
-                                : item.color === 'amber'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            }`}
-                          >
+                    {soil!.nutrients.map((item, idx) => {
+                      const nutrientName = isHi
+                        ? (item.name === 'Nitrogen (N)' ? 'नाइट्रोजन (N)'
+                            : item.name === 'Phosphorus (P)' ? 'फास्फोरस (P)'
+                            : item.name === 'Potassium (K)' ? 'पोटेशियम (K)'
+                            : item.name === 'Organic Carbon' ? 'जैविक कार्बन'
+                            : item.name === 'pH Level' ? 'पीएच स्तर'
+                            : item.name)
+                        : item.name;
+
+                      const rawStatus = item.status as string;
+                      const statusLabel = isHi
+                        ? (rawStatus === 'Optimal' ? 'अनुकूल'
+                            : rawStatus === 'Good' ? 'अच्छा'
+                            : rawStatus === 'Medium' ? 'मध्यम'
+                            : rawStatus === 'Low' ? 'कम'
+                            : rawStatus === 'Deficient' ? 'कमी'
+                            : rawStatus === 'Excess' ? 'अधिक'
+                            : rawStatus)
+                        : item.status;
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
+                          <span className="font-medium text-gray-700">{nutrientName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500 text-xs">
+                              {item.value} {item.unit}
+                            </span>
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
+                              className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
                                 item.color === 'red'
-                                  ? 'bg-red-500'
+                                  ? 'bg-red-50 text-red-700 border border-red-200'
                                   : item.color === 'amber'
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               }`}
-                            />
-                            <span>{item.status}</span>
-                          </span>
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  item.color === 'red'
+                                    ? 'bg-red-500'
+                                    : item.color === 'amber'
+                                    ? 'bg-amber-500'
+                                    : 'bg-emerald-500'
+                                }`}
+                              />
+                              <span>{statusLabel}</span>
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
