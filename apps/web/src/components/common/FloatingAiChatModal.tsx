@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Bot,
@@ -94,6 +94,31 @@ function stopTtsSpeech() {
     window.speechSynthesis.cancel();
   }
 }
+
+/* =========================================================
+   QUICK PROMPTS BY LANGUAGE
+========================================================= */
+
+const QUICK_PROMPTS_BY_LANG: Record<'mewari' | 'hi' | 'en', string[]> = {
+  mewari: [
+    'आज पाणी पावणो के?',
+    'माटी में खाद कई नाखणी?',
+    'गेहूं में रोग रो इलाज कई है?',
+    'मौसम रा हाल कई है?',
+  ],
+  hi: [
+    'आज सिंचाई करनी चाहिए?',
+    'मिट्टी में नाइट्रोजन कैसे बढ़ाएं?',
+    'पत्तियों पर धब्बे का क्या इलाज है?',
+    'फसल में खाद कब डालें?',
+  ],
+  en: [
+    'Should I irrigate today?',
+    'How to boost soil nitrogen?',
+    'Treatment for leaf spots?',
+    'Best organic fertilizers?',
+  ],
+};
 
 /* =========================================================
    COMPONENT
@@ -374,8 +399,6 @@ export const FloatingAiChatModal: React.FC = () => {
     };
   }, []);
 
-  if (!isAiChatOpen) return null;
-
   // ═══════════════════════════════════════════════════════════════════
   // SUBMIT HANDLER (MODALITY MATCHING)
   // ═══════════════════════════════════════════════════════════════════
@@ -569,30 +592,8 @@ export const FloatingAiChatModal: React.FC = () => {
   // QUICK PROMPTS BY LANGUAGE
   // ═══════════════════════════════════════════════════════════════════
 
-  const quickPrompts = useMemo(() => {
-    if (chatLanguage === 'mewari') {
-      return [
-        'आज पाणी पावणो के?',
-        'माटी में खाद कई नाखणी?',
-        'गेहूं में रोग रो इलाज कई है?',
-        'मौसम रा हाल कई है?',
-      ];
-    }
-    if (chatLanguage === 'hi') {
-      return [
-        'आज सिंचाई करनी चाहिए?',
-        'मिट्टी में नाइट्रोजन कैसे बढ़ाएं?',
-        'पत्तियों पर धब्बे का क्या इलाज है?',
-        'फसल में खाद कब डालें?',
-      ];
-    }
-    return [
-      'Should I irrigate today?',
-      'How to boost soil nitrogen?',
-      'Treatment for leaf spots?',
-      'Best organic fertilizers?',
-    ];
-  }, [chatLanguage]);
+  const quickPrompts =
+    QUICK_PROMPTS_BY_LANG[chatLanguage] || QUICK_PROMPTS_BY_LANG.en;
 
   // Auth screen redirection
   const handleLoginClick = () => {
@@ -602,6 +603,9 @@ export const FloatingAiChatModal: React.FC = () => {
       state: { from: { pathname: location.pathname, search: location.search }, openAiChat: true },
     });
   };
+
+  // If chat modal is closed, do not render anything
+  if (!isAiChatOpen) return null;
 
   // Non-authenticated UI
   if (!isGenuinelyAuthenticated) {
