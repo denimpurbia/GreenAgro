@@ -4,12 +4,19 @@ import { config } from '../../config';
 export interface AdvisoryContext {
   farmName: string;
   crop: string;
+  cropVariety?: string;
   stage?: string;
   soilScore?: number | null;
+  soilType?: string;
+  irrigationMethod?: string;
+  areaAcres?: number | string;
+  boundaryPointsCount?: number;
   ndvi?: number | null;
   weatherToday?: string;
   rainProbability?: string;
+  humidity?: string;
   location?: string;
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>;
 }
 
 export interface DiagnosisResult {
@@ -61,13 +68,16 @@ export class GeminiService {
   public static async generateAdvisory(
     context: AdvisoryContext,
     prompt: string,
-    language: 'en' | 'hi' = 'en',
+    language: 'en' | 'hi' | 'mewari' | string = 'en',
     imageBase64?: string,
-    imageMimeType?: string
+    imageMimeType?: string,
+    history?: Array<{ role: 'user' | 'assistant'; text: string }>
   ): Promise<string> {
     const client = this.getClient();
     if (!client) {
-      // API not configured — return honest message, never fake data
+      if (language === 'mewari') {
+        return 'माफ़ करजो, AI सहायक हाल चालू नी है। GEMINI_API_KEY सेट करणी पड़ेला।';
+      }
       return language === 'hi'
         ? 'माफ़ करें, AI सहायक अभी कॉन्फ़िगर नहीं है। कृपया व्यवस्थापक से संपर्क करें या GEMINI_API_KEY सेट करें।'
         : 'The AI assistant is not configured. Please set the GEMINI_API_KEY environment variable on the server to enable personalized farming guidance.';
@@ -77,45 +87,71 @@ export class GeminiService {
       const model = client.getGenerativeModel({ model: config.geminiModel });
 
       const soilInfo = context.soilScore != null ? `Soil Health Index: ${context.soilScore}/100` : 'Soil health data not yet entered';
+      const soilTypeInfo = context.soilType ? `Soil Type: ${context.soilType}` : '';
+      const irrigationInfo = context.irrigationMethod ? `Irrigation Method: ${context.irrigationMethod}` : '';
+      const areaInfo = context.areaAcres ? `Farm Area: ${context.areaAcres} Acres` : '';
       const ndviInfo = context.ndvi != null ? `Satellite NDVI: ${context.ndvi}` : 'Satellite NDVI not configured';
       const weatherInfo = context.weatherToday ?? 'Weather data unavailable';
       const rainInfo = context.rainProbability ?? 'N/A';
       const locationInfo = context.location ? `Location: ${context.location}` : '';
+      const cropVarietyInfo = context.cropVariety ? `Crop Variety: ${context.cropVariety}` : '';
 
-      const systemPrompt = `You are GreenAgro AI Assistant, an expert AI agricultural assistant specializing in regenerative farming for smallholders. Always identify yourself as "GreenAgro AI Assistant" when introducing yourself, and never refer to yourself as AgriSaarthi, Saarthi, or Agri Sarthi.
+      // Language instructions
+      let languagePrompt = '';
+      if (language === 'mewari') {
+        languagePrompt = `
+TARGET LANGUAGE: MEWARI (मेवाड़ी - Indigenous language of Udaipur, Rajasthan & Mewar region)
+- You MUST reply completely in natural, authentic Mewari (मेवाड़ी) language written in Devanagari script.
+- Use real Mewari vocabulary, idioms, and sentence structure (e.g. 'म्हारा भाई', 'थारे खेत में', 'पाणी कद पावणो', 'खाद कई नाखणी', 'घणो चोखो', 'कीकर करां', 'अठे', 'वठे', 'लागेला', 'होवेला', 'पोरा', 'बीघा', 'एकड़').
+- Keep the tone affectionate, culturally rooted, respectful, and crystal-clear for Rajasthani farmers.`;
+      } else if (language === 'hi') {
+        languagePrompt = `
+TARGET LANGUAGE: HINDI / HINGLISH:
+- Reply in clear, warm, conversational Hindi (or natural Hinglish) easily understood by Indian farmers.
+- Use practical farming terminology farmers use every day.`;
+      } else {
+        languagePrompt = `
+TARGET LANGUAGE: ENGLISH:
+- Reply in clear, simple, practical English tailored for Indian farming conditions.`;
+      }
 
-Farm Context:
-- Farm: ${context.farmName}
+      const conversationHistory =
+        (history && history.length > 0) || (context.history && context.history.length > 0)
+          ? (history || context.history || [])
+              .slice(-8)
+              .map(
+                (h) =>
+                  `${h.role === 'user' ? 'Farmer' : 'GreenAgro Assistant'}: ${h.text}`
+              )
+              .join('\n')
+          : '';
+
+      const systemPrompt = `You are GreenAgro AI Assistant, an expert AI agricultural advisor specializing in sustainable and regenerative farming for Indian farmers.
+
+FARMER'S ACTUAL FARM CONTEXT (Ground all advice in these exact conditions):
+- Farm Name: ${context.farmName}
+${locationInfo ? `- ${locationInfo}` : ''}
 - Primary Crop: ${context.crop}${context.stage ? ` (Growth Stage: ${context.stage})` : ''}
+${cropVarietyInfo ? `- ${cropVarietyInfo}` : ''}
+${areaInfo ? `- ${areaInfo}` : ''}
+${soilTypeInfo ? `- ${soilTypeInfo}` : ''}
+${irrigationInfo ? `- ${irrigationInfo}` : ''}
 - ${soilInfo}
 - ${ndviInfo}
-- Today's Weather: ${weatherInfo} (Rain probability: ${rainInfo})
-${locationInfo ? `- ${locationInfo}` : ''}
-${imageBase64 && imageMimeType ? '- The user has also attached an image for visual reference. Analyze it carefully and incorporate observations into your response.' : ''}
-CRITICAL LANGUAGE & COMMUNICATION RULES:
-1. GreenAgro is designed primarily for Indian farmers. ALWAYS prioritize easy-to-understand Hindi / Hinglish responses by default.
-2. If the user asks a question in Hindi, respond in Hindi / Hinglish.
-3. If the user asks a question in English, STILL respond in simple Hindi / Hinglish by default, because the primary users are Indian farmers. Do not assume that because the user typed English, they understand or prefer technical English.
-4. ONLY respond fully in English when the user EXPLICITLY requests it:
-   - "Answer in English"
-   - "English mein batao"
-   - "Reply in English"
-   or an equivalent explicit request.
-5. If the user explicitly asks for Hindi, respond in Hindi.
-6. Use simple, warm, farmer-friendly language and avoid unnecessary technical jargon.
-7. When an agricultural technical term is necessary, explain it briefly and simply in Hindi/Hinglish (e.g. explain NPK as kisan poshak tatva, organic carbon as mitti ki jaivik urvara shakti/gobar ki khaad).
-8. Keep all agricultural recommendations practical, low-cost, and actionable for smallholder farmers. Focus on soil health, water conservation, and regenerative practices.
-9. Never claim to know unavailable farm, soil, weather, or satellite data. If data is marked as unavailable or not configured, explicitly say you do not have that information.
-10. Continue identifying yourself as "GreenAgro AI Assistant". Never use "AgriSaarthi", "Saarthi", or any old project name.
-11. Avoid specific toxic chemical dosage recommendations.
+- Live Weather: ${weatherInfo} (Rain probability: ${rainInfo})
+${imageBase64 && imageMimeType ? '- The farmer has attached an image of their crop. Analyze it carefully and reference specific visual findings.' : ''}
 
-FEW-SHOT EXAMPLES FOR LANGUAGE BEHAVIOR:
-- User asks in English: "How can I improve nitrogen in my soil?"
-  Assistant responds in Hindi/Hinglish: "Aapki mitti mein nitrogen badhane ke liye aap compost ya sadi hui gobar ki khaad ka use kar sakte hain. Saath hi dhaincha ya sanai jaisi hari khaad ugaakar mitti mein dabaane se natural nitrogen tezi se badhta hai..."
-- User asks in Hindi: "Mujhe fasal mein paani kab dena chahiye?"
-  Assistant responds in simple Hindi/Hinglish: "Fasal mein paani subah jaldi ya shaam ke samay dena sabse behtar hota hai. Agar mitti mein 2-3 inch gehraai tak nami kam ho, tabhi sinchai karein..."
-- User explicitly asks for English: "Answer this in English."
-  Assistant responds in English: "To improve nitrogen in your soil naturally, you can incorporate well-decomposed compost or farmyard manure..."`;
+CRITICAL RULES:
+1. GREETING RULE (VERY IMPORTANT):
+   - DO NOT greet the user with "Namaste", "Hello", "Ram Ram Sa", or introduce yourself ("I am GreenAgro AI Assistant") in ongoing responses!
+   - The user has ALREADY been greeted once at the beginning of the chat session.
+   - Start directly with the answer to the farmer's question. Be concise, direct, and warm.
+2. CONTEXT MEMORY:
+   - Always remember and refer back to what the farmer discussed earlier in the conversation history below.
+   - Tailor all recommendations to their specific crop (${context.crop}), farm size, soil type (${context.soilType || 'farm soil'}), and today's weather.
+3. ${languagePrompt}
+4. Keep all agricultural recommendations practical, low-cost, natural/organic, and actionable. Avoid toxic chemical overdoses.
+${conversationHistory ? `\nPREVIOUS CONVERSATION CONTEXT:\n${conversationHistory}\n` : ''}`;
 
       const parts: any[] = [systemPrompt, prompt];
 
@@ -136,6 +172,9 @@ FEW-SHOT EXAMPLES FOR LANGUAGE BEHAVIOR:
       return response.text();
     } catch (err: any) {
       console.error('[GeminiService] generateAdvisory error:', err?.message || err);
+      if (language === 'mewari') {
+        return 'AI सेवा हाल उपलब्ध नी है। थोड़ी देर बाद पाछो प्रयास करो सा।';
+      }
       return language === 'hi'
         ? 'AI सेवा अभी उपलब्ध नहीं है। कृपया थोड़ी देर बाद पुनः प्रयास करें।'
         : 'AI service is temporarily unavailable. Please try again shortly.';

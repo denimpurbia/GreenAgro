@@ -1412,6 +1412,8 @@ apiRouter.post(
       message = '',
       language = 'en',
       farmContext,
+      history,
+      inputMode = 'text',
       imageBase64,
       imageMimeType,
     } = req.body;
@@ -1443,7 +1445,8 @@ apiRouter.post(
           message,
           language,
           typeof imageBase64 === 'string' ? imageBase64 : undefined,
-          typeof imageMimeType === 'string' ? imageMimeType : undefined
+          typeof imageMimeType === 'string' ? imageMimeType : undefined,
+          Array.isArray(history) ? history : undefined
         );
 
       if (isConnectedToDb) {
@@ -1477,7 +1480,10 @@ apiRouter.post(
       }
 
       return res.json({
+        status: 'success',
         reply,
+        language,
+        inputMode,
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {

@@ -7,7 +7,7 @@ export interface IAdvisoryMessage extends Document {
   sender: 'user' | 'assistant';
   content: string;
   text: string;
-  language: 'en' | 'hi';
+  language: string;
   metadata?: Record<string, any>;
   contextSnapshot?: Record<string, any>;
   createdAt: Date;
@@ -22,7 +22,7 @@ const AdvisoryMessageSchema = new Schema<IAdvisoryMessage>(
     sender: { type: String, enum: ['user', 'assistant'], default: 'user' },
     content: { type: String, default: '' },
     text: { type: String, default: '' },
-    language: { type: String, enum: ['en', 'hi'], default: 'en' },
+    language: { type: String, default: 'en' },
     metadata: { type: Schema.Types.Mixed },
     contextSnapshot: { type: Schema.Types.Mixed },
   },

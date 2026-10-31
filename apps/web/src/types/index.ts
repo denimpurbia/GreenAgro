@@ -211,6 +211,7 @@ export interface ChatMessage {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
-  language?: 'en' | 'hi';
+  language?: 'en' | 'hi' | 'mewari';
   imageUrl?: string;
+  inputMode?: 'text' | 'voice';
 }

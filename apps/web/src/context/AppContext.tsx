@@ -189,11 +189,15 @@ interface AppContextType {
 
   // AI Chat
   chatMessages: ChatMessage[];
+  chatLanguage: 'en' | 'hi' | 'mewari';
+  setChatLanguage: (lang: 'en' | 'hi' | 'mewari') => void;
 
   sendChatMessage: (
     text: string,
-    imageData?: { base64: string; mimeType: string; previewUrl?: string }
-  ) => Promise<void>;
+    imageData?: { base64: string; mimeType: string; previewUrl?: string },
+    inputMode?: 'text' | 'voice',
+    targetLanguage?: 'en' | 'hi' | 'mewari'
+  ) => Promise<string | null>;
 
   isAiChatOpen: boolean;
 
@@ -1947,371 +1951,223 @@ try {
   // GREENAGRO AI CHAT
   // ───────────────────────────────────────────────────────────────────────────
 
-  const buildInitialChat =
-    (
-      lang: 'en' | 'hi',
-      name = ''
-    ): ChatMessage[] => {
-      const greetingName =
-        name &&
-        name !==
-          'Guest User'
-          ? `, ${name}`
-          : '';
+  const [chatLanguage, setChatLanguageState] = useState<'en' | 'hi' | 'mewari'>(() => {
+    const saved = localStorage.getItem('agrin_chat_lang');
+    if (saved === 'mewari' || saved === 'hi' || saved === 'en') return saved;
+    return language === 'hi' ? 'hi' : 'en';
+  });
 
-      return [
-        {
-          id:
-            'msg-welcome',
+  const setChatLanguage = (lang: 'en' | 'hi' | 'mewari') => {
+    setChatLanguageState(lang);
+    localStorage.setItem('agrin_chat_lang', lang);
+  };
 
-          sender:
-            'assistant',
+  const buildInitialChat = (
+    lang: 'en' | 'hi' | 'mewari',
+    name = ''
+  ): ChatMessage[] => {
+    const greetingName = name && name !== 'Guest User' ? `, ${name}` : '';
+    let greetingText = '';
 
-          text:
-            lang === 'hi'
-              ? `नमस्ते${greetingName}! मैं ग्रीनएग्रो एआई सहायक हूँ, आपका व्यक्तिगत कृषि सहायक। मुझसे फसलों, मिट्टी, मौसम या खेती के तरीकों के बारे में कुछ भी पूछें।`
-              : `Namaste${greetingName}! I'm GreenAgro AI Assistant, your AI-powered farming assistant. Ask me anything about crops, soil, weather, or regenerative practices.`,
+    if (lang === 'mewari') {
+      greetingText = `राम राम सा${greetingName}! मैं ग्रीनएग्रो एआई सहायक हूँ। थारे खेत, फसल, माटी या मौसम के बारे में कुछ भी पूछ सको हो।`;
+    } else if (lang === 'hi') {
+      greetingText = `नमस्ते${greetingName}! मैं ग्रीनएग्रो एआई सहायक हूँ, आपका व्यक्तिगत कृषि सहायक। मुझसे फसलों, मिट्टी, मौसम या खेती के तरीकों के बारे में कुछ भी पूछें।`;
+    } else {
+      greetingText = `Namaste${greetingName}! I'm GreenAgro AI Assistant, your AI-powered farming assistant. Ask me anything about crops, soil, weather, or regenerative practices.`;
+    }
 
-          timestamp:
-            new Date().toLocaleTimeString(
-              [],
-              {
-                hour:
-                  '2-digit',
-                minute:
-                  '2-digit',
-              }
-            ),
-        },
-      ];
-    };
+    return [
+      {
+        id: 'msg-welcome',
+        sender: 'assistant',
+        text: greetingText,
+        language: lang,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      },
+    ];
+  };
 
-  const [
-    chatMessages,
-    setChatMessages,
-  ] =
-    useState<ChatMessage[]>(
-      () => {
-        if (
-          authService.isAuthenticated()
-        ) {
-          const u =
-            authService.getCurrentUser();
-
-          if (
-            u &&
-            u.id
-          ) {
-            return buildInitialChat(
-              language,
-              u.name
-            );
-          }
-        }
-
-        return [];
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    if (authService.isAuthenticated()) {
+      const u = authService.getCurrentUser();
+      if (u && u.id) {
+        return buildInitialChat(chatLanguage, u.name);
       }
-    );
+    }
+    return [];
+  });
 
-  const [isAiLoading, setIsAiLoading] =
-    useState<boolean>(
-      false
-    );
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Synchronize chat with authentication
   // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      user &&
-      user.id
-    ) {
-      setChatMessages(
-        (prev) => {
-          if (
-            prev.length >
-            0
-          ) {
-            return prev;
-          }
-
-          return buildInitialChat(
-            language,
-            user.name
-          );
+    if (isAuthenticated && user && user.id) {
+      setChatMessages((prev) => {
+        if (prev.length > 0) {
+          return prev;
         }
-      );
+
+        return buildInitialChat(chatLanguage, user.name);
+      });
     } else {
-      setChatMessages(
-        (prev) =>
-          prev.length ===
-          0
-            ? prev
-            : []
-      );
+      setChatMessages((prev) => (prev.length === 0 ? prev : []));
     }
-  }, [
-    isAuthenticated,
-    user?.name,
-    user?.id,
-    language,
-  ]);
+  }, [isAuthenticated, user, chatLanguage]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Send Chat Message
   // ───────────────────────────────────────────────────────────────────────────
 
-  const sendChatMessage =
-    async (
-      text: string,
-      imageData?: { base64: string; mimeType: string; previewUrl?: string }
-    ) => {
-      if (
-        !isAuthenticated ||
-        !authService.isAuthenticated() ||
-        !user ||
-        !user.id
-      ) {
-        setIsAuthenticated(
-          false
-        );
+  const sendChatMessage = async (
+    text: string,
+    imageData?: { base64: string; mimeType: string; previewUrl?: string },
+    inputMode: 'text' | 'voice' = 'text',
+    targetLanguage?: 'en' | 'hi' | 'mewari'
+  ): Promise<string | null> => {
+    if (
+      !isAuthenticated ||
+      !authService.isAuthenticated() ||
+      !user ||
+      !user.id
+    ) {
+      setIsAuthenticated(false);
+      setIsAiChatOpen(true);
+      return null;
+    }
 
-        setIsAiChatOpen(
-          true
-        );
+    const token = authService.getToken();
 
-        return;
-      }
+    if (!token || authService.isTokenExpired(token)) {
+      logout();
+      setIsAiChatOpen(true);
+      return null;
+    }
 
-      const token =
-        authService.getToken();
+    const effectiveLang = targetLanguage || chatLanguage;
 
-      if (
-        !token ||
-        authService.isTokenExpired(
-          token
-        )
-      ) {
-        logout();
-
-        setIsAiChatOpen(
-          true
-        );
-
-        return;
-      }
-
-      const userMsg: ChatMessage =
-        {
-          id: `user-${Date.now()}`,
-
-          sender: 'user',
-
-          text,
-
-          timestamp:
-            new Date().toLocaleTimeString(
-              [],
-              {
-                hour:
-                  '2-digit',
-                minute:
-                  '2-digit',
-              }
-            ),
-
-          ...(imageData?.previewUrl
-            ? { imageUrl: imageData.previewUrl }
-            : {}),
-        };
-
-      setChatMessages(
-        (prev) => [
-          ...prev,
-          userMsg,
-        ]
-      );
-
-      setIsAiLoading(
-        true
-      );
-
-      try {
-        const response =
-          await fetch(
-            `${API_BASE}/assistant/message`,
-            {
-              method: 'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json',
-
-                Authorization:
-                  `Bearer ${token}`,
-              },
-
-              body: JSON.stringify({
-                message:
-                  text,
-
-                language,
-
-                ...(imageData
-                  ? {
-                      imageBase64: imageData.base64,
-                      imageMimeType: imageData.mimeType,
-                    }
-                  : {}),
-
-                farmContext: {
-                  farmId:
-                    farm?.id ||
-                    '',
-
-                  farmName:
-                    farm?.name ||
-                    'No farm configured yet',
-
-                  crop:
-                    farm?.primaryCrop ||
-                    'General Crops',
-
-                  stage:
-                    farm?.growthStage ||
-                    'Vegetative',
-
-                  location:
-                    farm?.locationName ||
-                    'Local Region',
-
-                  soilScore:
-                    soil?.score ??
-                    null,
-
-                  ndvi:
-                    satellite.ndvi,
-
-                  weatherToday:
-                    weather
-                      ? `${weather.current.temp}°C, ${weather.current.condition}`
-                      : null,
-
-                  rainProbability:
-                    weather
-                      ? `${weather.current.rainProbability}%`
-                      : null,
-                },
-              }),
-            }
-          );
-
-        if (
-          response.status ===
-            401 ||
-          response.status ===
-            403
-        ) {
-          logout();
-
-          setIsAiChatOpen(
-            true
-          );
-
-          return;
-        }
-
-        const contentType =
-          response.headers.get(
-            'content-type'
-          ) || '';
-
-        if (
-          contentType.includes(
-            'application/json'
-          )
-        ) {
-          const data =
-            await safeJson(response);
-
-          const reply =
-            data.reply ||
-            data.message;
-
-          if (reply) {
-            setChatMessages(
-              (prev) => [
-                ...prev,
-                {
-                  id: `ai-${Date.now()}`,
-
-                  sender:
-                    'assistant',
-
-                  text:
-                    reply,
-
-                  timestamp:
-                    new Date().toLocaleTimeString(
-                      [],
-                      {
-                        hour:
-                          '2-digit',
-                        minute:
-                          '2-digit',
-                      }
-                    ),
-                },
-              ]
-            );
-
-            return;
-          }
-        }
-
-        throw new Error(
-          `Server returned ${response.status}`
-        );
-      } catch {
-        const errMsg: ChatMessage =
-          {
-            id: `err-${Date.now()}`,
-
-            sender:
-              'assistant',
-
-            text:
-              language ===
-              'hi'
-                ? 'माफ़ करें, AI सेवा अभी उपलब्ध नहीं है। कृपया थोड़ी देर बाद पुनः प्रयास करें।'
-                : 'AI advisory is temporarily unavailable. Please verify GEMINI_API_KEY on the server or try again shortly.',
-
-            timestamp:
-              new Date().toLocaleTimeString(
-                [],
-                {
-                  hour:
-                    '2-digit',
-                  minute:
-                    '2-digit',
-                }
-              ),
-          };
-
-        setChatMessages(
-          (prev) => [
-            ...prev,
-            errMsg,
-          ]
-        );
-      } finally {
-        setIsAiLoading(
-          false
-        );
-      }
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text,
+      language: effectiveLang,
+      inputMode,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      ...(imageData?.previewUrl ? { imageUrl: imageData.previewUrl } : {}),
     };
+
+    setChatMessages((prev) => [...prev, userMsg]);
+    setIsAiLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/assistant/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: text,
+          language: effectiveLang,
+          inputMode,
+          ...(imageData
+            ? {
+                imageBase64: imageData.base64,
+                imageMimeType: imageData.mimeType,
+              }
+            : {}),
+          farmContext: {
+            farmId: farm?.id || '',
+            farmName: farm?.name || 'GreenAgro Farm',
+            crop: farm?.primaryCrop || 'Wheat',
+            cropVariety: (farm as any)?.cropVariety || '',
+            stage: (farm as any)?.growthStage || 'Vegetative',
+            location: farm?.locationName || 'Udaipur, Rajasthan, India',
+            areaAcres: farm?.areaAcres || 0,
+            soilType: farm?.soilType || 'Loamy',
+            irrigationMethod: farm?.irrigationMethod || 'Drip',
+            soilScore: soil?.score ?? null,
+            ndvi: satellite.ndvi,
+            weatherToday: weather
+              ? `${weather.current.temp}°C, ${weather.current.condition}`
+              : null,
+            rainProbability: weather
+              ? `${weather.current.rainProbability}%`
+              : null,
+          },
+          history: chatMessages.slice(-8).map((m) => ({
+            role: m.sender,
+            text: m.text,
+          })),
+        }),
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        logout();
+        setIsAiChatOpen(true);
+        return null;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+
+      if (contentType.includes('application/json')) {
+        const data = await safeJson(response);
+        const reply = data.reply || data.message;
+
+        if (reply) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              sender: 'assistant',
+              text: reply,
+              language: effectiveLang,
+              timestamp: new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            },
+          ]);
+
+          return reply;
+        }
+      }
+
+      throw new Error(`Server returned ${response.status}`);
+    } catch {
+      const fallbackText =
+        effectiveLang === 'mewari'
+          ? 'माफ़ करजो सा, AI सेवा हाल उपलब्ध नी है। थोड़ी देर बाद पाछो प्रयास करो सा।'
+          : effectiveLang === 'hi'
+          ? 'माफ़ करें, AI सेवा अभी उपलब्ध नहीं है। कृपया थोड़ी देर बाद पुनः प्रयास करें।'
+          : 'AI advisory is temporarily unavailable. Please verify GEMINI_API_KEY on the server or try again shortly.';
+
+      const errMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        sender: 'assistant',
+        text: fallbackText,
+        language: effectiveLang,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+
+      setChatMessages((prev) => [...prev, errMsg]);
+      return fallbackText;
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   // ───────────────────────────────────────────────────────────────────────────
   // Provider
@@ -2377,6 +2233,8 @@ try {
         refreshPractices,
 
         chatMessages,
+        chatLanguage,
+        setChatLanguage,
         sendChatMessage,
 
         isAiChatOpen,
