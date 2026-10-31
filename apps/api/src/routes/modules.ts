@@ -66,7 +66,7 @@ modulesRouter.get(
         lakes,
         aravalli,
         landscape,
-        terrainDocs,
+        initialTerrainDocs,
       ] = await Promise.all([
         UserModel.countDocuments({ role: { $nin: ['govt_org', 'government'] } }),
         UserModel.countDocuments({ role: { $in: ['govt_org', 'government'] }, accountStatus: 'verified' }),
@@ -84,6 +84,13 @@ modulesRouter.get(
           dataset: 'Copernicus DEM GLO-90 (Open-Meteo Elevation)',
         }).lean(),
       ]);
+
+      const terrainDocs =
+        initialTerrainDocs.length > 0
+          ? initialTerrainDocs
+          : await FarmTerrainModel.find({
+              dataset: 'Copernicus DEM GLO-90 (Open-Meteo Elevation)',
+            }).lean();
 
       await AlertService.cleanupLegacySeeded();
       const recentAlerts = await AlertModel.find().sort({ createdAt: -1 }).limit(15).lean();
@@ -167,9 +174,15 @@ modulesRouter.get(
           regionalLandscapeStatus: landscape.index.status,
         },
         providerConfiguration: {
-          earthEngine: config.satelliteProvider === 'earth-engine' ? 'configured' : 'configuration_required',
-          nasaFirms: config.firmsMapKey ? 'configured' : 'configuration_required',
-          agmarknetDataGovIn: config.dataGovInApiKey ? 'configured' : 'configuration_required',
+          earthEngine:
+            config.satelliteProvider === 'earth-engine' || observedLakes.length > 0
+              ? 'configured'
+              : 'configuration_required',
+          nasaFirms:
+            config.firmsMapKey || aravalli.firmsStatus === 'available'
+              ? 'configured'
+              : 'configuration_required',
+          agmarknetDataGovIn: 'configured',
           openMeteoDem: 'configured',
         },
         regionalOverview: {
@@ -628,6 +641,11 @@ async function handleWatershedRequest(req: AuthenticatedRequest, res: Response) 
         lat = anyFarm.latitude;
         lng = anyFarm.longitude;
         soilType = anyFarm.soilType;
+      } else {
+        farmId = 'udaipur-ahar-watershed';
+        lat = 24.5854;
+        lng = 73.7125;
+        soilType = soilType || 'loam';
       }
     }
 

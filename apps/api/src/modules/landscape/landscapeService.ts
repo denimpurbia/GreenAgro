@@ -1,6 +1,7 @@
 import { LandscapeIndexEngine } from './landscapeIndexEngine';
 import { LakeService } from '../lake/lakeService';
 import { AravalliService } from '../aravalli/aravalliService';
+import { WatershedService } from '../watershed/watershedService';
 import { FarmModel } from '../../models/Farm';
 import { FarmTerrainModel } from '../../models/FarmTerrain';
 import { SoilObservationModel } from '../../models/SoilObservation';
@@ -22,9 +23,22 @@ export class LandscapeService {
     const aravalliScore = typeof aravalli.score === 'number' ? aravalli.score : null;
 
     // 3. Watershed Resilience (computed from real Copernicus DEM terrain analyses in DB)
-    const terrainDocs = await FarmTerrainModel.find({
+    let terrainDocs = await FarmTerrainModel.find({
       dataset: 'Copernicus DEM GLO-90 (Open-Meteo Elevation)',
     }).lean();
+
+    if (terrainDocs.length === 0) {
+      await WatershedService.getFarmTerrainAnalysis(
+        'udaipur-ahar-watershed',
+        'regional-watershed',
+        24.5854,
+        73.7125,
+        'loam'
+      );
+      terrainDocs = await FarmTerrainModel.find({
+        dataset: 'Copernicus DEM GLO-90 (Open-Meteo Elevation)',
+      }).lean();
+    }
 
     let watershedResilienceScore: number | null = null;
     if (terrainDocs.length > 0) {
