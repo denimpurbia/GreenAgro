@@ -133,6 +133,10 @@ export const config = {
       const base = process.env.BACKEND_URL.trim().replace(/\/+$/, '');
       return `${base}/api/auth/google/callback`;
     }
+    if (process.env.RENDER_EXTERNAL_URL && process.env.RENDER_EXTERNAL_URL.trim()) {
+      const base = process.env.RENDER_EXTERNAL_URL.trim().replace(/\/+$/, '');
+      return `${base}/api/auth/google/callback`;
+    }
     // Automatically detect Vercel production or preview host URL
     if (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()) {
       const host = process.env.VERCEL_PROJECT_PRODUCTION_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');

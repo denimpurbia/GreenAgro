@@ -90,6 +90,14 @@ app.get('/', (_req, res) => {
   });
 });
 
+app.get('/api', (_req, res) => {
+  res.json({
+    status: 'ok',
+    platform: 'GreenAgro / AgriN Intelligence Network API',
+    health: '/api/health',
+  });
+});
+
 // Mount API routes under /api and root
 app.use('/api', apiRouter);
 app.use(apiRouter);
