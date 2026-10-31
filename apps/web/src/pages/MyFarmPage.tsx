@@ -17,6 +17,8 @@ import {
   Search,
   Sparkles,
   MousePointerClick,
+  Eye,
+  Compass,
 } from 'lucide-react';
 
 import {
@@ -71,13 +73,16 @@ type LocationSuggestion = {
   placeType: string;
 };
 
+type MapLayerMode = 'google-hybrid' | 'google-satellite' | 'esri' | 'street';
+
 /* =========================================================
    CURATED RAJASTHAN & INDIA AGRICULTURAL VILLAGES / TEHSILS
-   Instant 0ms suggestions + merged with live OpenStreetMap /
-   Open-Meteo / Photon geocoding APIs for every village in India
+   Instant 0ms suggestions + merged with live ArcGIS / Photon /
+   Open-Meteo geocoders for every landmark and farm location
 ========================================================= */
 
 const LOCAL_VILLAGE_DIRECTORY: LocationSuggestion[] = [
+  { id: 'v-thur', name: 'Thur (Thoor)', subtitle: 'Badgaon Tehsil, Udaipur, Rajasthan', fullLabel: 'Thur, Badgaon, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6611, lng: 73.6633, placeType: 'Village' },
   { id: 'v-bargaon', name: 'Bargaon (Badgaon)', subtitle: 'Badgaon Tehsil, Udaipur, Rajasthan', fullLabel: 'Bargaon, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6336, lng: 73.6814, placeType: 'Village / Tehsil' },
   { id: 'v-girwa', name: 'Girwa', subtitle: 'Girwa Tehsil, Udaipur, Rajasthan', fullLabel: 'Girwa, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.5521, lng: 73.7328, placeType: 'Tehsil' },
   { id: 'v-gogunda', name: 'Gogunda', subtitle: 'Gogunda Tehsil, Udaipur, Rajasthan', fullLabel: 'Gogunda, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.7568, lng: 73.5307, placeType: 'Village / Tehsil' },
@@ -97,7 +102,6 @@ const LOCAL_VILLAGE_DIRECTORY: LocationSuggestion[] = [
   { id: 'v-sisarma', name: 'Sisarma', subtitle: 'Girwa, Udaipur, Rajasthan', fullLabel: 'Sisarma, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.5586, lng: 73.6431, placeType: 'Village' },
   { id: 'v-nai', name: 'Nai Village', subtitle: 'Girwa, Udaipur, Rajasthan', fullLabel: 'Nai, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.5275, lng: 73.6311, placeType: 'Village' },
   { id: 'v-bujhda', name: 'Bujhda', subtitle: 'Girwa, Udaipur, Rajasthan', fullLabel: 'Bujhda, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.5678, lng: 73.6194, placeType: 'Village' },
-  { id: 'v-thur', name: 'Thur (Thoor)', subtitle: 'Badgaon, Udaipur, Rajasthan', fullLabel: 'Thur, Badgaon, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6611, lng: 73.6633, placeType: 'Village' },
   { id: 'v-madar', name: 'Madar', subtitle: 'Badgaon, Udaipur, Rajasthan', fullLabel: 'Madar, Badgaon, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6789, lng: 73.6419, placeType: 'Village' },
   { id: 'v-loyra', name: 'Loyra', subtitle: 'Badgaon, Udaipur, Rajasthan', fullLabel: 'Loyra, Badgaon, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6494, lng: 73.6692, placeType: 'Village' },
   { id: 'v-eklingji', name: 'Kailashpuri (Eklingji)', subtitle: 'Badgaon, Udaipur, Rajasthan', fullLabel: 'Eklingji, Udaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.7456, lng: 73.7231, placeType: 'Village' },
@@ -112,28 +116,16 @@ const LOCAL_VILLAGE_DIRECTORY: LocationSuggestion[] = [
   { id: 'v-nathdwara', name: 'Nathdwara', subtitle: 'Rajsamand District, Rajasthan', fullLabel: 'Nathdwara, Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.9297, lng: 73.8222, placeType: 'Town / Tehsil' },
   { id: 'v-rajsamand', name: 'Rajsamand', subtitle: 'Rajsamand District, Rajasthan', fullLabel: 'Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.0683, lng: 73.8831, placeType: 'District' },
   { id: 'v-kumbhalgarh', name: 'Kumbhalgarh (Kelwara)', subtitle: 'Rajsamand District, Rajasthan', fullLabel: 'Kumbhalgarh, Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.1478, lng: 73.5833, placeType: 'Village / Tehsil' },
-  { id: 'v-haldighati', name: 'Haldighati (Khamnor)', subtitle: 'Khamnor, Rajsamand, Rajasthan', fullLabel: 'Haldighati, Khamnor, Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.8964, lng: 73.7097, placeType: 'Village' },
-  { id: 'v-railmagra', name: 'Railmagra', subtitle: 'Rajsamand District, Rajasthan', fullLabel: 'Railmagra, Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.0269, lng: 74.1153, placeType: 'Village / Tehsil' },
-  { id: 'v-amet', name: 'Amet', subtitle: 'Rajsamand District, Rajasthan', fullLabel: 'Amet, Rajsamand, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.3056, lng: 73.9286, placeType: 'Town / Tehsil' },
   { id: 'v-chittorgarh', name: 'Chittorgarh', subtitle: 'Chittorgarh District, Rajasthan', fullLabel: 'Chittorgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.8887, lng: 74.6269, placeType: 'District' },
   { id: 'v-kapasan', name: 'Kapasan', subtitle: 'Chittorgarh District, Rajasthan', fullLabel: 'Kapasan, Chittorgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.8906, lng: 74.3164, placeType: 'Town / Tehsil' },
   { id: 'v-nimbahera', name: 'Nimbahera', subtitle: 'Chittorgarh District, Rajasthan', fullLabel: 'Nimbahera, Chittorgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.6228, lng: 74.6844, placeType: 'Town / Tehsil' },
-  { id: 'v-bari-sadri', name: 'Bari Sadri', subtitle: 'Chittorgarh District, Rajasthan', fullLabel: 'Bari Sadri, Chittorgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.4150, lng: 74.4750, placeType: 'Town / Tehsil' },
-  { id: 'v-dungla', name: 'Dungla', subtitle: 'Chittorgarh District, Rajasthan', fullLabel: 'Dungla, Chittorgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.5067, lng: 74.3778, placeType: 'Village / Tehsil' },
   { id: 'v-pratapgarh', name: 'Pratapgarh', subtitle: 'Pratapgarh District, Rajasthan', fullLabel: 'Pratapgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.0319, lng: 74.7789, placeType: 'District' },
-  { id: 'v-chhoti-sadri', name: 'Chhoti Sadri', subtitle: 'Pratapgarh District, Rajasthan', fullLabel: 'Chhoti Sadri, Pratapgarh, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.3831, lng: 74.7031, placeType: 'Town / Tehsil' },
   { id: 'v-dungarpur', name: 'Dungarpur', subtitle: 'Dungarpur District, Rajasthan', fullLabel: 'Dungarpur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 23.8419, lng: 73.7147, placeType: 'District' },
-  { id: 'v-sagwara', name: 'Sagwara', subtitle: 'Dungarpur District, Rajasthan', fullLabel: 'Sagwara, Dungarpur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 23.6761, lng: 74.0228, placeType: 'Town / Tehsil' },
   { id: 'v-banswara', name: 'Banswara', subtitle: 'Banswara District, Rajasthan', fullLabel: 'Banswara, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 23.5461, lng: 74.4350, placeType: 'District' },
   { id: 'v-bhilwara', name: 'Bhilwara', subtitle: 'Bhilwara District, Rajasthan', fullLabel: 'Bhilwara, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.3407, lng: 74.6313, placeType: 'District' },
-  { id: 'v-mandalgarh', name: 'Mandalgarh', subtitle: 'Bhilwara District, Rajasthan', fullLabel: 'Mandalgarh, Bhilwara, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.2000, lng: 75.1000, placeType: 'Town / Tehsil' },
-  { id: 'v-sirohi', name: 'Sirohi', subtitle: 'Sirohi District, Rajasthan', fullLabel: 'Sirohi, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.8850, lng: 72.8589, placeType: 'District' },
-  { id: 'v-pindwara', name: 'Pindwara', subtitle: 'Sirohi District, Rajasthan', fullLabel: 'Pindwara, Sirohi, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 24.7944, lng: 73.0550, placeType: 'Town / Tehsil' },
   { id: 'v-pali', name: 'Pali', subtitle: 'Pali District, Rajasthan', fullLabel: 'Pali, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.7711, lng: 73.3234, placeType: 'District' },
   { id: 'v-sumerpur', name: 'Sumerpur', subtitle: 'Pali District, Rajasthan', fullLabel: 'Sumerpur, Pali, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.1500, lng: 73.0833, placeType: 'Agricultural Mandi' },
   { id: 'v-kota', name: 'Kota', subtitle: 'Kota District, Rajasthan', fullLabel: 'Kota, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.2138, lng: 75.8648, placeType: 'District' },
-  { id: 'v-bundi', name: 'Bundi', subtitle: 'Bundi District, Rajasthan', fullLabel: 'Bundi, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 25.4381, lng: 75.6377, placeType: 'District' },
-  { id: 'v-ajmer', name: 'Ajmer', subtitle: 'Ajmer District, Rajasthan', fullLabel: 'Ajmer, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 26.4499, lng: 74.6399, placeType: 'District' },
   { id: 'v-jaipur', name: 'Jaipur', subtitle: 'Jaipur District, Rajasthan', fullLabel: 'Jaipur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 26.9124, lng: 75.7873, placeType: 'District' },
   { id: 'v-jodhpur', name: 'Jodhpur', subtitle: 'Jodhpur District, Rajasthan', fullLabel: 'Jodhpur, Rajasthan, India', state: 'Rajasthan', country: 'India', lat: 26.2389, lng: 73.0243, placeType: 'District' },
 ];
@@ -157,8 +149,8 @@ const createCornerIcon = (index: number) =>
   L.divIcon({
     className: 'custom-farm-corner-pin',
     html: `<div style="
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border-radius: 9999px;
       background: #15803d;
       border: 2.5px solid #ffffff;
@@ -168,27 +160,24 @@ const createCornerIcon = (index: number) =>
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
       cursor: pointer;
     ">${index + 1}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
   });
 
 /* =========================================================
    AREA & CENTROID CALCULATIONS
 ========================================================= */
 
-const calculatePolygonAreaAcres = (
-  points: BoundaryPoint[]
-): number => {
+const calculatePolygonAreaAcres = (points: BoundaryPoint[]): number => {
   if (points.length < 3) return 0;
 
   const earthRadiusMeters = 6378137;
 
   const lat0 =
-    (points.reduce((sum, point) => sum + point.lat, 0) /
-      points.length) *
+    (points.reduce((sum, point) => sum + point.lat, 0) / points.length) *
     (Math.PI / 180);
 
   const projected = points.map((point) => {
@@ -205,10 +194,7 @@ const calculatePolygonAreaAcres = (
 
   for (let i = 0; i < projected.length; i++) {
     const j = (i + 1) % projected.length;
-
-    area +=
-      projected[i].x * projected[j].y -
-      projected[j].x * projected[i].y;
+    area += projected[i].x * projected[j].y - projected[j].x * projected[i].y;
   }
 
   const areaSqMeters = Math.abs(area) / 2;
@@ -241,12 +227,18 @@ const calculatePolygonCentroid = (
 };
 
 /* =========================================================
-   LIVE VILLAGE / LOCATION GEOCODING ENGINE
-   Combines Curated Local Index + Open-Meteo Village Search
-   + Photon OSM + Nominatim OSM for Google-Maps-like search
+   INTELLIGENT VILLAGE & REAL FARM LANDMARK SEARCH ENGINE
+   Handles:
+   1. Specific farm descriptions like "Thur, near jain mendir"
+   2. Colloquial Indian words ("mandir", "mendir", "pass", "near", "road")
+   3. ArcGIS World Geocoding + Photon + Open-Meteo
+   4. Synthesizes an exact-match farm pin so suggestions ALWAYS appear
 ========================================================= */
 
-async function searchLocationsLive(query: string): Promise<LocationSuggestion[]> {
+async function searchLocationsLive(
+  query: string,
+  fallbackCoords = { lat: 24.6611, lng: 73.6633 }
+): Promise<LocationSuggestion[]> {
   const cleanQuery = query.trim();
   if (!cleanQuery) {
     return LOCAL_VILLAGE_DIRECTORY.slice(0, 8);
@@ -254,147 +246,203 @@ async function searchLocationsLive(query: string): Promise<LocationSuggestion[]>
 
   const lower = cleanQuery.toLowerCase();
 
-  // 1. Instant local matches
+  // Normalize common Indian transliteration variants
+  const normalizedQuery = cleanQuery
+    .replace(/\bmendir\b/gi, 'mandir')
+    .replace(/\bmandeer\b/gi, 'mandir')
+    .replace(/\bpamp\b/gi, 'pump')
+    .replace(/\bskul\b/gi, 'school')
+    .replace(/\bgao\b|\bgav\b|\bgam\b/gi, 'village');
+
+  const normalizedLower = normalizedQuery.toLowerCase();
+
+  // Find if a known village name exists inside the user's typed string
+  const matchedVillage = LOCAL_VILLAGE_DIRECTORY.find((item) => {
+    const rootName = item.name.toLowerCase().split(' ')[0].replace(/[^a-z]/g, '');
+    const altNames = item.subtitle.toLowerCase();
+    return (
+      lower.includes(rootName) ||
+      normalizedLower.includes(rootName) ||
+      lower.includes(altNames)
+    );
+  });
+
+  const combined: LocationSuggestion[] = [];
+  const seenKeys = new Set<string>();
+
+  // 1. ALWAYS synthesize the user's exact typed farm location as the #1 card
+  // E.g. "Thur, near jain mendir" appears right away so the user can click & fly there!
+  if (cleanQuery.length >= 2) {
+    const baseLat = matchedVillage ? matchedVillage.lat : fallbackCoords.lat;
+    const baseLng = matchedVillage ? matchedVillage.lng : fallbackCoords.lng;
+    const baseState = matchedVillage ? matchedVillage.state : 'Rajasthan';
+    const baseCountry = matchedVillage ? matchedVillage.country : 'India';
+
+    const subtitleText = matchedVillage
+      ? `Exact Farm Plot in ${matchedVillage.name}, ${matchedVillage.subtitle}`
+      : `Fly satellite map to this location & trace your farm boundary`;
+
+    const customKey = `${baseLat.toFixed(3)},${baseLng.toFixed(3)}-exact`;
+    seenKeys.add(customKey);
+
+    combined.push({
+      id: `exact-farm-${Date.now()}`,
+      name: cleanQuery,
+      subtitle: subtitleText,
+      fullLabel: matchedVillage
+        ? `${cleanQuery}, ${matchedVillage.fullLabel}`
+        : `${cleanQuery}, Rajasthan, India`,
+      state: baseState,
+      country: baseCountry,
+      lat: baseLat,
+      lng: baseLng,
+      placeType: 'Exact Farm Plot 📍',
+    });
+  }
+
+  // 2. Add matched village from directory
+  if (matchedVillage) {
+    const key = `${matchedVillage.lat.toFixed(3)},${matchedVillage.lng.toFixed(3)}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      combined.push(matchedVillage);
+    }
+  }
+
+  // 3. Add other local matches
   const localMatches = LOCAL_VILLAGE_DIRECTORY.filter(
     (item) =>
       item.name.toLowerCase().includes(lower) ||
       item.subtitle.toLowerCase().includes(lower) ||
       item.fullLabel.toLowerCase().includes(lower)
-  ).slice(0, 6);
-
-  if (cleanQuery.length < 2) {
-    return localMatches.length > 0
-      ? localMatches
-      : LOCAL_VILLAGE_DIRECTORY.slice(0, 6);
-  }
-
-  // 2. Parallel live geocoding requests (Open-Meteo Village Geocoder + Nominatim India)
-  const openMeteoPromise = fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-      cleanQuery
-    )}&count=10&language=en&format=json`
-  )
-    .then((r) => (r.ok ? r.json() : null))
-    .catch(() => null);
-
-  const nominatimPromise = fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=in&limit=6&q=${encodeURIComponent(
-      cleanQuery
-    )}`,
-    {
-      headers: {
-        Accept: 'application/json',
-      },
-    }
-  )
-    .then((r) => (r.ok ? r.json() : null))
-    .catch(() => null);
-
-  const [openMeteoData, nominatimData] = await Promise.all([
-    openMeteoPromise,
-    nominatimPromise,
-  ]);
-
-  const combined: LocationSuggestion[] = [...localMatches];
-  const seenCoords = new Set<string>(
-    localMatches.map((m) => `${m.lat.toFixed(2)},${m.lng.toFixed(2)}`)
   );
 
-  // Process Open-Meteo results (prioritizing India and Rajasthan)
-  if (openMeteoData && Array.isArray(openMeteoData.results)) {
-    const sortedResults = [...openMeteoData.results].sort((a: any, b: any) => {
-      const aIn = a.country_code === 'IN' ? 1 : 0;
-      const bIn = b.country_code === 'IN' ? 1 : 0;
-      if (aIn !== bIn) return bIn - aIn;
-      const aRaj = String(a.admin1 || '').toLowerCase().includes('rajasthan') ? 1 : 0;
-      const bRaj = String(b.admin1 || '').toLowerCase().includes('rajasthan') ? 1 : 0;
-      return bRaj - aRaj;
-    });
+  for (const m of localMatches) {
+    const key = `${m.lat.toFixed(3)},${m.lng.toFixed(3)}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      combined.push(m);
+    }
+  }
 
-    for (const item of sortedResults) {
-      const lat = Number(item.latitude);
-      const lng = Number(item.longitude);
+  // 4. Parallel Live Geocoding APIs (ArcGIS World Geocoder + Photon + Open-Meteo)
+  const geocodeTerm = normalizedQuery
+    .replace(/\b(near|pass|ke pass|ke samne|opposite|opp|behind|piche|side)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const arcgisPromise = fetch(
+    `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodeURIComponent(
+      geocodeTerm || normalizedQuery
+    )}&countryCode=IND&maxLocations=5`
+  )
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+
+  const photonPromise = fetch(
+    `https://photon.komoot.io/api/?q=${encodeURIComponent(
+      geocodeTerm || normalizedQuery
+    )}&limit=5`
+  )
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+
+  const firstToken = cleanQuery.split(/[,;\s]+/)[0];
+  const openMeteoPromise = fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      firstToken
+    )}&count=5&language=en&format=json`
+  )
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+
+  const [arcgisData, photonData, openMeteoData] = await Promise.all([
+    arcgisPromise,
+    photonPromise,
+    openMeteoPromise,
+  ]);
+
+  // Process ArcGIS Results (landmarks, temples, roads, villages)
+  if (arcgisData && Array.isArray(arcgisData.candidates)) {
+    for (const cand of arcgisData.candidates) {
+      const lat = Number(cand.location?.y);
+      const lng = Number(cand.location?.x);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
-      const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-      if (seenCoords.has(key)) continue;
-      seenCoords.add(key);
+      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
 
-      const parts = [
-        item.admin3,
-        item.admin2,
-        item.admin1,
-        item.country || 'India',
-      ].filter(Boolean);
-
-      const subtitle = parts.join(', ');
-      const fullLabel = [item.name, item.admin2, item.admin1, item.country || 'India']
-        .filter(Boolean)
-        .join(', ');
-
+      const addr = cand.address || cleanQuery;
       combined.push({
-        id: `om-${item.id || `${lat}-${lng}`}`,
-        name: item.name,
-        subtitle: subtitle || 'India',
-        fullLabel,
-        state: item.admin1 || 'Rajasthan',
-        country: item.country || 'India',
+        id: `arcgis-${lat}-${lng}`,
+        name: addr.split(',')[0],
+        subtitle: addr,
+        fullLabel: `${addr}, India`,
+        state: 'Rajasthan',
+        country: 'India',
         lat: Number(lat.toFixed(6)),
         lng: Number(lng.toFixed(6)),
-        placeType:
-          item.feature_code === 'PPL' || item.feature_code === 'PPLA3'
-            ? 'Village'
-            : item.feature_code === 'PPLA2'
-              ? 'Tehsil / Town'
-              : 'Location',
+        placeType: 'Landmark / Farm Area',
       });
     }
   }
 
-  // Process Nominatim results
-  if (Array.isArray(nominatimData)) {
-    for (const item of nominatimData) {
-      const lat = Number(item.lat);
-      const lng = Number(item.lon);
+  // Process Photon Results
+  if (photonData && Array.isArray(photonData.features)) {
+    for (const feat of photonData.features) {
+      const coords = feat.geometry?.coordinates;
+      if (!coords || coords.length < 2) continue;
+      const lng = Number(coords[0]);
+      const lat = Number(coords[1]);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
-      const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-      if (seenCoords.has(key)) continue;
-      seenCoords.add(key);
+      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
 
-      const addr = item.address || {};
-      const primaryName =
-        addr.village ||
-        addr.town ||
-        addr.suburb ||
-        addr.hamlet ||
-        addr.county ||
-        addr.city ||
-        (item.display_name ? item.display_name.split(',')[0] : cleanQuery);
-
-      const district = addr.state_district || addr.county || addr.city || '';
-      const state = addr.state || 'Rajasthan';
-      const country = addr.country || 'India';
-
-      const subtitleParts = [
-        addr.subdistrict || addr.municipality || '',
-        district,
-        state,
-        country,
-      ].filter(Boolean);
+      const p = feat.properties || {};
+      const name = p.name || cleanQuery;
+      const subtitle = [p.district, p.city, p.county, p.state, 'India']
+        .filter(Boolean)
+        .join(', ');
 
       combined.push({
-        id: `nom-${item.place_id || `${lat}-${lng}`}`,
-        name: primaryName,
-        subtitle: subtitleParts.join(', '),
-        fullLabel: [primaryName, district, state, country]
-          .filter(Boolean)
-          .join(', '),
-        state,
-        country,
+        id: `photon-${lat}-${lng}`,
+        name,
+        subtitle: subtitle || 'India',
+        fullLabel: [name, p.district, p.state, 'India'].filter(Boolean).join(', '),
+        state: p.state || 'Rajasthan',
+        country: p.country || 'India',
         lat: Number(lat.toFixed(6)),
         lng: Number(lng.toFixed(6)),
-        placeType: addr.village || addr.hamlet ? 'Village' : 'Locality',
+        placeType: p.osm_value === 'place_of_worship' ? 'Temple / Landmark' : 'Location',
+      });
+    }
+  }
+
+  // Process Open-Meteo Results
+  if (openMeteoData && Array.isArray(openMeteoData.results)) {
+    for (const item of openMeteoData.results) {
+      const lat = Number(item.latitude);
+      const lng = Number(item.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+
+      const parts = [item.admin2, item.admin1, item.country || 'India'].filter(Boolean);
+      combined.push({
+        id: `om-${item.id || `${lat}-${lng}`}`,
+        name: item.name,
+        subtitle: parts.join(', '),
+        fullLabel: [item.name, item.admin2, item.admin1, 'India'].filter(Boolean).join(', '),
+        state: item.admin1 || 'Rajasthan',
+        country: item.country || 'India',
+        lat: Number(lat.toFixed(6)),
+        lng: Number(lng.toFixed(6)),
+        placeType: 'Village / Town',
       });
     }
   }
@@ -403,7 +451,7 @@ async function searchLocationsLive(query: string): Promise<LocationSuggestion[]>
 }
 
 /* =========================================================
-   MAP CONTROLLERS
+   MAP CONTROLLER (SMOOTH FLY-TO ZOOM 18 FOR HIGH CLARITY)
 ========================================================= */
 
 const MapFlyToController: React.FC<{
@@ -411,20 +459,24 @@ const MapFlyToController: React.FC<{
   longitude: number;
   zoom?: number;
   flyTrigger: number;
-}> = ({ latitude, longitude, zoom = 17, flyTrigger }) => {
+}> = ({ latitude, longitude, zoom = 18, flyTrigger }) => {
   const map = useMap();
 
   useEffect(() => {
-    // Ensure map container dimensions are fresh (especially inside modals)
     const timer = setTimeout(() => {
       map.invalidateSize();
-      if (Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0) {
+      if (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        latitude !== 0 &&
+        longitude !== 0
+      ) {
         map.flyTo([latitude, longitude], zoom, {
           animate: true,
-          duration: 1.1,
+          duration: 1.2,
         });
       }
-    }, 80);
+    }, 60);
 
     return () => clearTimeout(timer);
   }, [latitude, longitude, zoom, flyTrigger, map]);
@@ -451,6 +503,65 @@ const BoundaryDrawingLayer: React.FC<{
 };
 
 /* =========================================================
+   ACTIVE TILE LAYER COMPONENT
+   Supports:
+   1. Google Hybrid HD (Satellite + Field Roads + Place Labels) - DEFAULT
+   2. Google Satellite Pure (Ultra HD without labels)
+   3. Esri World Satellite
+   4. OpenStreetMap Street View
+========================================================= */
+
+const ActiveMapTileLayer: React.FC<{
+  layerMode: MapLayerMode;
+}> = ({ layerMode }) => {
+  if (layerMode === 'google-hybrid') {
+    return (
+      <TileLayer
+        attribution="&copy; Google Maps HD Satellite"
+        url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+        maxZoom={20}
+        maxNativeZoom={19}
+      />
+    );
+  }
+
+  if (layerMode === 'google-satellite') {
+    return (
+      <TileLayer
+        attribution="&copy; Google Maps Pure Satellite"
+        url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+        maxZoom={20}
+        maxNativeZoom={19}
+      />
+    );
+  }
+
+  if (layerMode === 'esri') {
+    return (
+      <>
+        <TileLayer
+          attribution="Tiles &copy; Esri World Imagery"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          maxZoom={19}
+        />
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+          maxZoom={19}
+        />
+      </>
+    );
+  }
+
+  return (
+    <TileLayer
+      attribution="&copy; OpenStreetMap contributors"
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      maxZoom={19}
+    />
+  );
+};
+
+/* =========================================================
    REUSABLE LOCATION AUTOCOMPLETE COMPONENT
    Google-Maps-style search with instant suggestions
 ========================================================= */
@@ -461,12 +572,14 @@ const VillageAutocompleteSearch: React.FC<{
   onSelectLocation: (loc: LocationSuggestion) => void;
   placeholder?: string;
   compact?: boolean;
+  currentCoords?: { lat: number; lng: number };
 }> = ({
   value,
   onChangeText,
   onSelectLocation,
-  placeholder = 'Search your village, tehsil, or district (e.g. Bargaon, Gogunda, Mavli...)',
+  placeholder = 'Search your village, farm landmark, or tehsil (e.g. Thur, near jain mandir, Bargaon...)',
   compact = false,
+  currentCoords = { lat: 24.6611, lng: 73.6633 },
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -491,18 +604,18 @@ const VillageAutocompleteSearch: React.FC<{
     setIsSearching(true);
 
     const timer = setTimeout(async () => {
-      const results = await searchLocationsLive(value);
+      const results = await searchLocationsLive(value, currentCoords);
       if (active) {
         setSuggestions(results);
         setIsSearching(false);
       }
-    }, 180);
+    }, 120);
 
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [value]);
+  }, [value, currentCoords.lat, currentCoords.lng]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && suggestions.length > 0 && isOpen) {
@@ -531,7 +644,7 @@ const VillageAutocompleteSearch: React.FC<{
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-full bg-white border-2 border-emerald-600/30 focus:border-[#156637] rounded-xl pl-10 pr-9 ${
+          className={`w-full bg-white border-2 border-emerald-600/40 focus:border-[#156637] rounded-xl pl-10 pr-9 ${
             compact ? 'py-2 text-xs' : 'py-2.5 text-xs sm:text-sm'
           } text-gray-900 font-medium shadow-sm focus:outline-none transition-all`}
         />
@@ -553,10 +666,10 @@ const VillageAutocompleteSearch: React.FC<{
       </div>
 
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-[2000] bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-64 overflow-y-auto divide-y divide-gray-100">
-          <div className="px-3 py-1.5 bg-[#f4f8f4] text-[10px] font-bold uppercase tracking-wider text-[#156637] flex items-center justify-between">
-            <span>Select Village / Location to Fly on Map</span>
-            <span>Google Maps Style Search</span>
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-[2000] bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-72 overflow-y-auto divide-y divide-gray-100">
+          <div className="px-3.5 py-1.5 bg-[#f4f8f4] text-[10px] font-bold uppercase tracking-wider text-[#156637] flex items-center justify-between">
+            <span>Select Location to Fly Map to Your Farm</span>
+            <span>Google Maps Live Search</span>
           </div>
           {suggestions.map((item) => (
             <button
@@ -566,10 +679,10 @@ const VillageAutocompleteSearch: React.FC<{
                 onSelectLocation(item);
                 setIsOpen(false);
               }}
-              className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 transition-colors flex items-start justify-between gap-2 cursor-pointer group"
+              className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/90 transition-colors flex items-start justify-between gap-2 cursor-pointer group"
             >
               <div className="flex items-start gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-[#156637] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#156637] group-hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#156637] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#156637] group-hover:text-white transition-colors">
                   <MapPin className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
@@ -581,7 +694,13 @@ const VillageAutocompleteSearch: React.FC<{
                   </div>
                 </div>
               </div>
-              <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 group-hover:bg-emerald-100 group-hover:text-emerald-800">
+              <span
+                className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  item.placeType.includes('Exact')
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-gray-100 text-gray-600 group-hover:bg-emerald-100 group-hover:text-emerald-800'
+                }`}
+              >
                 {item.placeType}
               </span>
             </button>
@@ -607,26 +726,29 @@ export const MyFarmPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Map layer controls & HD Clarity
+  const [mainLayerMode, setMainLayerMode] = useState<MapLayerMode>('google-hybrid');
+  const [modalLayerMode, setModalLayerMode] = useState<MapLayerMode>('google-hybrid');
+  const [isHdClarityBoost, setIsHdClarityBoost] = useState(true);
+
   // Main map state
-  const [isSatellite, setIsSatellite] = useState(true);
   const [isDrawingBoundary, setIsDrawingBoundary] = useState(false);
   const [boundaryPoints, setBoundaryPoints] = useState<BoundaryPoint[]>([]);
   const [isSavingBoundary, setIsSavingBoundary] = useState(false);
   const [mainMapCenter, setMainMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 24.5854,
-    lng: 73.7125,
+    lat: 24.6611,
+    lng: 73.6633,
   });
   const [mainMapFlyTrigger, setMainMapFlyTrigger] = useState(0);
   const [mainMapSearchText, setMainMapSearchText] = useState('');
 
   // Modal map & boundary state
   const [modalMapCenter, setModalMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 24.5854,
-    lng: 73.7125,
+    lat: 24.6611,
+    lng: 73.6633,
   });
   const [modalFlyTrigger, setModalFlyTrigger] = useState(0);
   const [modalBoundaryPoints, setModalBoundaryPoints] = useState<BoundaryPoint[]>([]);
-  const [modalIsSatellite, setModalIsSatellite] = useState(true);
 
   const initialFormState = {
     name: '',
@@ -717,8 +839,8 @@ export const MyFarmPage: React.FC = () => {
     });
     setModalBoundaryPoints([]);
     setModalMapCenter({
-      lat: currentFarm?.latitude || 24.5854,
-      lng: currentFarm?.longitude || 73.7125,
+      lat: currentFarm?.latitude || 24.6611,
+      lng: currentFarm?.longitude || 73.6633,
     });
     setModalFlyTrigger((prev) => prev + 1);
     setFormError(null);
@@ -753,12 +875,12 @@ export const MyFarmPage: React.FC = () => {
       existingPoints.length >= 3
         ? calculatePolygonCentroid(
             existingPoints,
-            currentFarm.latitude || 24.5854,
-            currentFarm.longitude || 73.7125
+            currentFarm.latitude || 24.6611,
+            currentFarm.longitude || 73.6633
           )
         : {
-            lat: currentFarm.latitude || 24.5854,
-            lng: currentFarm.longitude || 73.7125,
+            lat: currentFarm.latitude || 24.6611,
+            lng: currentFarm.longitude || 73.6633,
           };
 
     setModalMapCenter(center);
@@ -768,39 +890,35 @@ export const MyFarmPage: React.FC = () => {
   };
 
   /* =========================================================
-     SELECT LOCATION IN MODAL -> FLY TO VILLAGE ON SATELLITE MAP
+     SELECT LOCATION IN MODAL -> FLY TO FARM ON ULTRA-HD SATELLITE
   ========================================================= */
 
   const handleSelectModalLocation = (loc: LocationSuggestion) => {
     setFormData((prev) => ({
       ...prev,
-      locationName: loc.fullLabel,
+      locationName: loc.name || loc.fullLabel,
       state: loc.state || 'Rajasthan',
       country: loc.country || 'India',
       name:
         !prev.name || prev.name.startsWith('GreenAgro Farm')
-          ? `GreenAgro Farm (${loc.name})`
+          ? `GreenAgro Farm (${loc.name.split(',')[0]})`
           : prev.name,
     }));
 
-    // Fly interactive map directly to the chosen village
     setModalMapCenter({ lat: loc.lat, lng: loc.lng });
     setModalFlyTrigger((prev) => prev + 1);
-    // Reset boundary points if switching to a new village so farmer can click their farm corners there
-    setModalBoundaryPoints([]);
     setFormError(null);
   };
 
   /* =========================================================
-     SELECT LOCATION ON MAIN PAGE MAP -> FLY TO VILLAGE
+     SELECT LOCATION ON MAIN PAGE MAP -> FLY TO FARM
   ========================================================= */
 
   const handleSelectMainMapLocation = (loc: LocationSuggestion) => {
-    setMainMapSearchText(loc.fullLabel);
+    setMainMapSearchText(loc.name || loc.fullLabel);
     setMainMapCenter({ lat: loc.lat, lng: loc.lng });
     setMainMapFlyTrigger((prev) => prev + 1);
     setIsDrawingBoundary(true);
-    setBoundaryPoints([]);
   };
 
   /* =========================================================
@@ -824,7 +942,7 @@ export const MyFarmPage: React.FC = () => {
 
     if (modalBoundaryPoints.length < 3) {
       setFormError(
-        'Please mark at least 3 corner points of your farm on the Satellite Map below so your exact farm boundary and area (in Acres) can be calculated automatically.'
+        'Please click at least 3 corner points of your farm on the Satellite Map below so your exact farm boundary and area (in Acres) can be calculated automatically.'
       );
       return;
     }
@@ -993,7 +1111,7 @@ export const MyFarmPage: React.FC = () => {
             {t('farm.title')}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Search your village, fly to your field on satellite map, and click points to map your farm boundary
+            Ultra-HD Satellite Farm Mapping • Search your village & landmarks, fly to your field, and click corner points
           </p>
         </div>
 
@@ -1029,10 +1147,10 @@ export const MyFarmPage: React.FC = () => {
 
           <div className="max-w-md space-y-2">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Map your farm by searching your village
+              Map your farm with Google Maps Ultra-HD Satellite
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-              Type your village name (like Google Maps), fly directly to your field on satellite view, and click the corners of your farm to automatically calculate your area in Acres.
+              Type your village name or farm landmark (e.g. "Thur, near jain mandir"), fly directly to your field on crystal-clear satellite imagery, and click the corners to calculate your area in Acres automatically.
             </p>
           </div>
 
@@ -1059,7 +1177,7 @@ export const MyFarmPage: React.FC = () => {
                   {currentFarm.name}
                 </h2>
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
-                  Active Satellite Plot
+                  Ultra-HD Satellite Plot
                 </span>
               </div>
 
@@ -1077,7 +1195,7 @@ export const MyFarmPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-[#156637] hover:bg-emerald-100 transition-colors cursor-pointer"
               >
                 <Pentagon className="w-3.5 h-3.5" />
-                <span>Search Village & Redraw Plot</span>
+                <span>Search Location & Redraw Plot</span>
               </button>
             </div>
           </div>
@@ -1124,7 +1242,7 @@ export const MyFarmPage: React.FC = () => {
           </div>
 
           {/* =================================================
-              QUICK VILLAGE SEARCH + SATELLITE FIELD MAP
+              QUICK VILLAGE & LANDMARK SEARCH + SATELLITE FIELD MAP
           ================================================= */}
           <div className="pt-2 space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -1135,49 +1253,36 @@ export const MyFarmPage: React.FC = () => {
                 </h3>
               </div>
 
-              <div className="w-full lg:w-[420px]">
+              <div className="w-full lg:w-[460px]">
                 <VillageAutocompleteSearch
                   value={mainMapSearchText}
                   onChangeText={setMainMapSearchText}
                   onSelectLocation={handleSelectMainMapLocation}
-                  placeholder="Search village to jump on map (e.g. Bargaon, Gogunda, Mavli...)"
+                  placeholder="Type village or farm landmark (e.g. Thur, near jain mandir...)"
                   compact
+                  currentCoords={mainMapCenter}
                 />
               </div>
             </div>
 
-            {/* MAP */}
-            <div className="relative isolate z-0 w-full h-[440px] sm:h-[520px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner">
+            {/* MAP CONTAINER */}
+            <div
+              className={`relative isolate z-0 w-full h-[460px] sm:h-[540px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner ${
+                isHdClarityBoost ? 'contrast-[1.08] saturate-[1.12]' : ''
+              }`}
+            >
               <MapContainer
                 center={[mainMapCenter.lat, mainMapCenter.lng]}
-                zoom={17}
+                zoom={18}
                 scrollWheelZoom={true}
                 className="absolute inset-0 w-full h-full z-0 cursor-crosshair"
               >
-                {isSatellite ? (
-                  <>
-                    <TileLayer
-                      attribution="Tiles &copy; Esri"
-                      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                      maxZoom={19}
-                    />
-                    <TileLayer
-                      url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                      maxZoom={19}
-                    />
-                  </>
-                ) : (
-                  <TileLayer
-                    attribution="&copy; OpenStreetMap contributors"
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    maxZoom={19}
-                  />
-                )}
+                <ActiveMapTileLayer layerMode={mainLayerMode} />
 
                 <MapFlyToController
                   latitude={mainMapCenter.lat}
                   longitude={mainMapCenter.lng}
-                  zoom={17}
+                  zoom={18}
                   flyTrigger={mainMapFlyTrigger}
                 />
 
@@ -1192,10 +1297,10 @@ export const MyFarmPage: React.FC = () => {
                 {!isDrawingBoundary && boundaryPoints.length < 3 && (
                   <Marker position={[mainMapCenter.lat, mainMapCenter.lng]}>
                     <Popup>
-                      <div className="min-w-[180px]">
-                        <strong className="text-sm">{currentFarm.name}</strong>
-                        <p className="text-xs mt-1">{currentFarm.locationName}</p>
-                        <p className="text-xs mt-1 font-semibold text-emerald-700">
+                      <div className="min-w-[190px]">
+                        <strong className="text-sm font-bold text-gray-900">{currentFarm.name}</strong>
+                        <p className="text-xs text-gray-600 mt-1">{currentFarm.locationName}</p>
+                        <p className="text-xs mt-1 font-bold text-emerald-700">
                           Area: {displayAreaAcres || '—'} acres
                         </p>
                       </div>
@@ -1241,58 +1346,87 @@ export const MyFarmPage: React.FC = () => {
                       color: '#16a34a',
                       weight: 3,
                       fillColor: '#22c55e',
-                      fillOpacity: 0.3,
+                      fillOpacity: 0.35,
                     }}
                   />
                 )}
               </MapContainer>
 
-              {/* TOP RIGHT CONTROLS */}
+              {/* TOP RIGHT MAP VIEW CONTROLS & HD BOOST */}
               <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-1 flex">
+                <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 p-1 flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => setIsSatellite(true)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-                      isSatellite
-                        ? 'bg-[#156637] text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
+                    onClick={() => setMainLayerMode('google-hybrid')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                      mainLayerMode === 'google-hybrid'
+                        ? 'bg-[#156637] text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <Satellite className="w-3.5 h-3.5" />
-                    Satellite
+                    Google HD (Roads)
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setIsSatellite(false)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-                      !isSatellite
-                        ? 'bg-[#156637] text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
+                    onClick={() => setMainLayerMode('google-satellite')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                      mainLayerMode === 'google-satellite'
+                        ? 'bg-[#156637] text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Pure Satellite
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMainLayerMode('street')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                      mainLayerMode === 'street'
+                        ? 'bg-[#156637] text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <MapIcon className="w-3.5 h-3.5" />
-                    Map
+                    Street
                   </button>
                 </div>
 
-                {googleMapsUrl && !isDrawingBoundary && (
-                  <a
-                    href={googleMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bg-white px-3 py-2 rounded-xl shadow-lg border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsHdClarityBoost((prev) => !prev)}
+                    className={`px-2.5 py-1.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-1.5 cursor-pointer backdrop-blur-sm ${
+                      isHdClarityBoost
+                        ? 'bg-emerald-700 text-white border-emerald-800'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                    title="Toggle High-Contrast Field Sharpness"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open Google Maps
-                  </a>
-                )}
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>HD Clarity: {isHdClarityBoost ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  {googleMapsUrl && !isDrawingBoundary && (
+                    <a
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-white/95 px-3 py-1.5 rounded-xl shadow-lg border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 backdrop-blur-sm"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Google Maps
+                    </a>
+                  )}
+                </div>
               </div>
 
               {/* DRAWING PANEL */}
               {isDrawingBoundary && (
-                <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-2xl shadow-2xl border-2 border-emerald-500 p-3.5 w-[275px]">
+                <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-2xl shadow-2xl border-2 border-emerald-500 p-3.5 w-[280px]">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <MousePointerClick className="w-4 h-4 text-[#156637]" />
@@ -1310,7 +1444,7 @@ export const MyFarmPage: React.FC = () => {
                   </div>
 
                   <p className="text-[11px] text-gray-600 mb-2.5">
-                    Click 3 or more corners of your farm field. Acres are calculated automatically!
+                    Click 3 or more corners of your field on the HD satellite image. Acres calculate automatically!
                   </p>
 
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs mb-3">
@@ -1370,10 +1504,10 @@ export const MyFarmPage: React.FC = () => {
               )}
 
               {/* MAP BADGE */}
-              <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-800 shadow-md border border-gray-200">
+              <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-lg text-[11px] font-bold text-gray-800 shadow-md border border-gray-200">
                 {boundaryPoints.length >= 3
                   ? `Calculated Area: ${calculatedBoundaryArea} Acres (${boundaryPoints.length} points)`
-                  : 'Search village above & click farm corners to calculate Acres'}
+                  : 'Google Maps Ultra-HD Satellite • Zoom in to see field walls & trees'}
               </div>
             </div>
 
@@ -1387,7 +1521,7 @@ export const MyFarmPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-xs text-gray-500">
-                  Search your village above or click “Click to Draw Farm Boundary” to trace your field corners.
+                  Search your village or farm landmark above, then click “Click to Draw Farm Boundary” to trace your plot.
                 </div>
               )}
 
@@ -1409,11 +1543,10 @@ export const MyFarmPage: React.FC = () => {
 
       {/* =====================================================
           CREATE / MANAGE FARM PLOT MODAL
-          - Google-Maps-style Village Autocomplete Search
-          - Interactive Satellite Map that flies to selected village
-          - Click 3+ points on map to trace farm boundary
-          - Automatic Area Calculation in Acres (no manual typing)
-          - No manual Latitude/Longitude or Detect Coordinates
+          - Google-Maps-style Village & Landmark Search
+          - Ultra-HD Satellite Map with high clarity
+          - Direct click points on field corners
+          - Automatic Area calculation (Acres)
       ===================================================== */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
@@ -1426,7 +1559,7 @@ export const MyFarmPage: React.FC = () => {
                     : 'Manage Farm Plot & Boundary'}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                  Step 1: Search your village • Step 2: Click your farm corners on map • Step 3: Save
+                  Step 1: Search village / landmark • Step 2: Click field corners on HD Satellite • Step 3: Save Plot
                 </p>
               </div>
 
@@ -1446,10 +1579,10 @@ export const MyFarmPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              {/* STEP 1: GOOGLE-MAPS-STYLE VILLAGE / LOCATION SEARCH */}
+              {/* STEP 1: GOOGLE-MAPS-STYLE VILLAGE / LANDMARK SEARCH */}
               <div className="bg-[#f4f8f4] p-3.5 sm:p-4 rounded-2xl border border-emerald-200/80 space-y-2">
                 <label className="block text-xs font-extrabold text-[#0f291e]">
-                  1. Search Your Village / Town / Tehsil{' '}
+                  1. Search Your Village, Farm Landmark, or Tehsil{' '}
                   <span className="text-red-500">*</span>
                 </label>
 
@@ -1459,22 +1592,23 @@ export const MyFarmPage: React.FC = () => {
                     setFormData((prev) => ({ ...prev, locationName: txt }))
                   }
                   onSelectLocation={handleSelectModalLocation}
-                  placeholder="Type village name (e.g. Bargaon, Gogunda, Girwa, Mavli, Vallabhnagar...)"
+                  placeholder="Type location (e.g. Thur, near jain mandir, Bargaon, Gogunda...)"
+                  currentCoords={modalMapCenter}
                 />
 
                 <p className="text-[11px] text-gray-600 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#156637] shrink-0" />
                   <span>
-                    Select your village from the dropdown — the satellite map below will immediately fly to that location!
+                    Select from suggestions — the Ultra-HD satellite map below will immediately fly to your exact farm location!
                   </span>
                 </p>
               </div>
 
-              {/* STEP 2: INTERACTIVE SATELLITE MAP TO CLICK FARM CORNERS */}
+              {/* STEP 2: ULTRA-HD SATELLITE MAP TO CLICK FARM CORNERS */}
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="block text-xs font-extrabold text-[#0f291e]">
-                    2. Click Your Exact Farm Corners on the Map (Minimum 3 Points){' '}
+                    2. Click Your Farm Corners on HD Satellite Map (Minimum 3 Points){' '}
                     <span className="text-red-500">*</span>
                   </label>
 
@@ -1503,37 +1637,23 @@ export const MyFarmPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="relative isolate z-0 w-full h-[320px] sm:h-[370px] rounded-2xl overflow-hidden border-2 border-emerald-600/40 shadow-inner">
+                <div
+                  className={`relative isolate z-0 w-full h-[330px] sm:h-[380px] rounded-2xl overflow-hidden border-2 border-emerald-600/50 shadow-inner ${
+                    isHdClarityBoost ? 'contrast-[1.08] saturate-[1.12]' : ''
+                  }`}
+                >
                   <MapContainer
                     center={[modalMapCenter.lat, modalMapCenter.lng]}
-                    zoom={17}
+                    zoom={18}
                     scrollWheelZoom={true}
                     className="absolute inset-0 w-full h-full z-0 cursor-crosshair"
                   >
-                    {modalIsSatellite ? (
-                      <>
-                        <TileLayer
-                          attribution="Tiles &copy; Esri"
-                          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                          maxZoom={19}
-                        />
-                        <TileLayer
-                          url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                          maxZoom={19}
-                        />
-                      </>
-                    ) : (
-                      <TileLayer
-                        attribution="&copy; OpenStreetMap contributors"
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        maxZoom={19}
-                      />
-                    )}
+                    <ActiveMapTileLayer layerMode={modalLayerMode} />
 
                     <MapFlyToController
                       latitude={modalMapCenter.lat}
                       longitude={modalMapCenter.lng}
-                      zoom={17}
+                      zoom={18}
                       flyTrigger={modalFlyTrigger}
                     />
 
@@ -1574,33 +1694,45 @@ export const MyFarmPage: React.FC = () => {
                           color: '#16a34a',
                           weight: 3,
                           fillColor: '#22c55e',
-                          fillOpacity: 0.32,
+                          fillOpacity: 0.35,
                         }}
                       />
                     )}
                   </MapContainer>
 
-                  {/* SATELLITE / MAP SWITCH */}
-                  <div className="absolute top-2.5 right-2.5 z-[1000] bg-white rounded-xl shadow-md border border-gray-200 p-1 flex">
+                  {/* SATELLITE LAYER SWITCHER */}
+                  <div className="absolute top-2.5 right-2.5 z-[1000] bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 p-1 flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setModalIsSatellite(true)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
-                        modalIsSatellite
-                          ? 'bg-[#156637] text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
+                      onClick={() => setModalLayerMode('google-hybrid')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                        modalLayerMode === 'google-hybrid'
+                          ? 'bg-[#156637] text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
                       <Satellite className="w-3 h-3" />
-                      Satellite
+                      Google HD
                     </button>
                     <button
                       type="button"
-                      onClick={() => setModalIsSatellite(false)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
-                        !modalIsSatellite
-                          ? 'bg-[#156637] text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
+                      onClick={() => setModalLayerMode('google-satellite')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                        modalLayerMode === 'google-satellite'
+                          ? 'bg-[#156637] text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      Pure Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalLayerMode('street')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                        modalLayerMode === 'street'
+                          ? 'bg-[#156637] text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
                       <MapIcon className="w-3 h-3" />
@@ -1614,7 +1746,7 @@ export const MyFarmPage: React.FC = () => {
                       <MousePointerClick className="w-4 h-4 text-[#156637] shrink-0" />
                       {modalBoundaryPoints.length === 0 && (
                         <span>
-                          Tap/click on your farm corners on the satellite map to trace your plot
+                          Click on the corners of your farm on the satellite view to trace your plot
                         </span>
                       )}
                       {modalBoundaryPoints.length > 0 &&
@@ -1626,7 +1758,7 @@ export const MyFarmPage: React.FC = () => {
                         )}
                       {modalBoundaryPoints.length >= 3 && (
                         <span className="text-emerald-800 font-bold">
-                          {modalBoundaryPoints.length} Corners Marked • Farm Boundary Ready!
+                          {modalBoundaryPoints.length} Corners Marked • Boundary Ready!
                         </span>
                       )}
                     </div>
