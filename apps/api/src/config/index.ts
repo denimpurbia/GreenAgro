@@ -123,28 +123,21 @@ export const config = {
   },
 
   get googleRedirectUri(): string {
+    // In production (Render / Vercel), use the authorized Google Cloud Console redirect URI
+    if (
+      process.env.NODE_ENV === 'production' ||
+      process.env.RENDER ||
+      process.env.RENDER_EXTERNAL_URL ||
+      process.env.VERCEL ||
+      process.env.VERCEL_URL
+    ) {
+      return 'https://greenagro-api.vercel.app/api/auth/google/callback';
+    }
     if (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.trim()) {
       return process.env.GOOGLE_CALLBACK_URL.trim();
     }
     if (process.env.GOOGLE_REDIRECT_URI && process.env.GOOGLE_REDIRECT_URI.trim()) {
       return process.env.GOOGLE_REDIRECT_URI.trim();
-    }
-    if (process.env.BACKEND_URL && process.env.BACKEND_URL.trim()) {
-      const base = process.env.BACKEND_URL.trim().replace(/\/+$/, '');
-      return `${base}/api/auth/google/callback`;
-    }
-    if (process.env.RENDER_EXTERNAL_URL && process.env.RENDER_EXTERNAL_URL.trim()) {
-      const base = process.env.RENDER_EXTERNAL_URL.trim().replace(/\/+$/, '');
-      return `${base}/api/auth/google/callback`;
-    }
-    // Automatically detect Vercel production or preview host URL
-    if (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()) {
-      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-      return `https://${host}/api/auth/google/callback`;
-    }
-    if (process.env.VERCEL_URL && process.env.VERCEL_URL.trim()) {
-      const host = process.env.VERCEL_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-      return `https://${host}/api/auth/google/callback`;
     }
     return 'http://localhost:5000/api/auth/google/callback';
   },

@@ -519,6 +519,14 @@ apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
 
+  // Forward callback from the Google-authorized Vercel host to the Render backend
+  const reqHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
+  if (reqHost.includes('greenagro-api.vercel.app')) {
+    const qIdx = req.originalUrl.indexOf('?');
+    const queryStr = qIdx >= 0 ? req.originalUrl.slice(qIdx) : '';
+    return res.redirect(302, `https://greenagro-api-tmpp.onrender.com/api/auth/google/callback${queryStr}`);
+  }
+
   const frontendUrl = config.frontendUrl;
   const errorRedirect = (reason: string) =>
     res.redirect(`${frontendUrl}/login?google_error=${encodeURIComponent(reason)}`);
