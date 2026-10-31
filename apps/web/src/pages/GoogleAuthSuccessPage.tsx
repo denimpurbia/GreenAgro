@@ -79,8 +79,9 @@ export const GoogleAuthSuccessPage: React.FC = () => {
         // Update AppContext authentication state
         login(data.user, token, true);
 
-        // Navigate to /app
-        navigate('/app', { replace: true });
+        // Navigate to appropriate portal (/app/gov for verified govt_org, /app for farmer)
+        const destination = authService.getDefaultPortalPath(data.user);
+        navigate(destination, { replace: true });
       } catch (err: any) {
         const msg = err?.message || 'Network error while verifying session.';
         console.error('[Google OAuth Success] Error:', msg);

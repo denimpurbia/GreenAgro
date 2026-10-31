@@ -8,6 +8,8 @@
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "seed": "tsx src/scripts/seed.ts",
+    "bootstrap-super-admin": "tsx src/scripts/bootstrap-super-admin.ts",
+    "verify-admin": "tsx src/scripts/verify-govt-user.ts",
     "test": "tsx src/scripts/test-endpoints.ts"
   },
   "dependencies": {

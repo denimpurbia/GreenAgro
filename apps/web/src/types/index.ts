@@ -1,4 +1,5 @@
-export type UserRole = 'farmer' | 'expert' | 'government';
+export type UserRole = 'farmer' | 'govt_org';
+export type AccountStatus = 'pending' | 'verified' | 'rejected' | 'suspended';
 
 export interface User {
   id: string;
@@ -6,6 +7,25 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
+  rawRole?: string;
+  accountStatus?: AccountStatus;
+  isSuperAdmin?: boolean;
+  customPermissions?: string[];
+  organizationName?: string;
+  designation?: string;
+  state?: string;
+  district?: string;
+  organizationType?: string;
+  officialIdInfo?: string;
+  verificationNotes?: string;
+  rejectionReason?: string;
+  suspendedReason?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  suspendedBy?: string;
+  suspendedAt?: string;
+  createdAt?: string;
+  permissions?: string[];
   location: string;
   language: 'en' | 'hi';
   avatarUrl?: string;

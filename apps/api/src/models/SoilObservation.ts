@@ -8,6 +8,12 @@ export interface ISoilObservation extends Document {
   phosphorus: number;
   potassium: number;
   organicCarbon: number;
+  sulphur?: number;
+  zinc?: number;
+  iron?: number;
+  manganese?: number;
+  boron?: number;
+  electricalConductivity?: number;
   score: number;
   rating: 'Poor' | 'Moderate' | 'Good' | 'Excellent';
   nutrients: Array<{
@@ -33,6 +39,12 @@ const SoilObservationSchema = new Schema<ISoilObservation>(
     phosphorus: { type: Number, required: true },
     potassium: { type: Number, required: true },
     organicCarbon: { type: Number, required: true },
+    sulphur: { type: Number },
+    zinc: { type: Number },
+    iron: { type: Number },
+    manganese: { type: Number },
+    boron: { type: Number },
+    electricalConductivity: { type: Number },
     score: { type: Number, required: true },
     rating: {
       type: String,

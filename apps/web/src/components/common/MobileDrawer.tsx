@@ -9,11 +9,21 @@ import {
   CloudSun,
   Stethoscope,
   Leaf,
-  Bot,
   Globe2,
   Settings,
+  Store,
+  Mountain,
+  Waves,
+  Shield,
+  Users,
+  Bell,
+  Building2,
+  BarChart3,
+  BookOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { authService } from '../../services/authService';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -25,18 +35,41 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
 
   if (!isOpen) return null;
 
-  const allNavItems = [
-    { to: '/app', icon: Home, labelKey: 'nav.home', exact: true },
-    { to: '/app/farm', icon: MapPin, labelKey: 'nav.myFarm' },
-    { to: '/app/satellite', icon: Satellite, labelKey: 'nav.satellite' },
-    { to: '/app/soil', icon: Sprout, labelKey: 'nav.soilHealth' },
-    { to: '/app/weather', icon: CloudSun, labelKey: 'nav.weather' },
-    { to: '/app/disease', icon: Stethoscope, labelKey: 'nav.cropDoctor' },
-    { to: '/app/regenerative', icon: Leaf, labelKey: 'nav.regenerativePlan' },
-    { to: '/app/assistant', icon: Bot, labelKey: 'nav.aiAssistant' },
-    { to: '/app/knowledge', icon: Globe2, labelKey: 'nav.knowledgeExchange' },
-    { to: '/app/settings', icon: Settings, labelKey: 'nav.settings' },
+  const isGovt = authService.isGovtOrg(user);
+  const canVerify = authService.canVerifyAccounts(user);
+
+  const farmerNavItems = [
+    { to: '/app', icon: Home, label: t('nav.home') || 'Dashboard', exact: true },
+    { to: '/app/farm', icon: MapPin, label: t('nav.myFarm') || 'My Farm' },
+    { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') || 'Satellite View' },
+    { to: '/app/soil', icon: Sprout, label: t('nav.soilHealth') || 'Soil Health' },
+    { to: '/app/weather', icon: CloudSun, label: t('nav.weather') || 'Weather' },
+    { to: '/app/disease', icon: Stethoscope, label: t('nav.cropDoctor') || 'Crop Doctor' },
+    { to: '/app/market', icon: Store, label: t('nav.market') || 'Fair Market' },
+    { to: '/app/reports', icon: Users, label: t('nav.reports') || 'Community Reports' },
+    { to: '/app/regenerative', icon: Leaf, label: t('nav.regenerativePlan') || 'Regenerative Plan' },
+    { to: '/app/knowledge', icon: Globe2, label: t('nav.knowledgeExchange') || 'Knowledge Exchange' },
+    { to: '/app/settings', icon: Settings, label: t('nav.settings') || 'Settings' },
   ];
+
+  const govtNavItems = [
+    { to: '/app/gov', icon: Building2, label: 'Government Dashboard', exact: true },
+    ...(canVerify
+      ? [{ to: '/app/admin/verifications', icon: ShieldCheck, label: 'Account Verification' }]
+      : []),
+    { to: '/app/lakes', icon: Waves, label: 'Lakes Monitor' },
+    { to: '/app/watershed', icon: Mountain, label: 'Watershed Defense' },
+    { to: '/app/aravalli', icon: Shield, label: 'Aravalli Guard' },
+    { to: '/app/reports', icon: Users, label: 'Community Reports Moderation' },
+    { to: '/app/landscape', icon: Mountain, label: 'Ridge-to-Lake Landscape' },
+    { to: '/app/alerts', icon: Bell, label: 'Unified Alerts' },
+    { to: '/app/market', icon: Store, label: 'Fair Market Monitoring' },
+    { to: '/app/gov/regional', icon: BarChart3, label: 'Farmer / Regional Overview' },
+    { to: '/app/schemes', icon: BookOpen, label: 'Government Schemes' },
+    { to: '/app/settings', icon: Settings, label: 'Settings' },
+  ];
+
+  const allNavItems = isGovt ? govtNavItems : farmerNavItems;
 
   return (
     <div className="fixed inset-0 z-50 md:hidden flex justify-end">
@@ -64,8 +97,24 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
           </button>
         </div>
 
+        {/* Role Portal Pill */}
+        <div className="mt-3">
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border ${
+              isGovt
+                ? 'bg-emerald-900 text-white border-emerald-800'
+                : 'bg-[#f2f7f3] text-agri-900 border-agri-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {isGovt ? 'GOVT / ORG ADMIN PORTAL' : 'FARMER PORTAL'}
+            </span>
+          </div>
+        </div>
+
         {/* Links */}
-        <nav className="mt-4 space-y-1">
+        <nav className="mt-3 space-y-1">
           {allNavItems.map((item) => (
             <NavLink
               key={item.to}
@@ -81,7 +130,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
               }
             >
               <item.icon className="w-4 h-4 shrink-0" />
-              <span>{t(item.labelKey)}</span>
+              <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>

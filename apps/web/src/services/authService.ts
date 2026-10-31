@@ -1,4 +1,4 @@
-import { User, UserRole } from '../types';
+import { User, UserRole, AccountStatus } from '../types';
 
 export interface LoginCredentials {
   email: string;
@@ -13,6 +13,12 @@ export interface RegisterData {
   password: string;
   role: UserRole;
   location?: string;
+  organizationName?: string;
+  designation?: string;
+  state?: string;
+  district?: string;
+  organizationType?: string;
+  officialIdInfo?: string;
 }
 
 export interface AuthResult {
@@ -20,6 +26,11 @@ export interface AuthResult {
   user?: User;
   token?: string;
   error?: string;
+  pendingVerification?: boolean;
+  accountStatus?: AccountStatus;
+  rejectionReason?: string;
+  suspendedReason?: string;
+  code?: string;
 }
 
 export interface GoogleConfigStatus {
@@ -42,7 +53,43 @@ async function safeReadJson(response: Response): Promise<any> {
   }
 }
 
+function normalizeUserRole(user: any): User {
+  if (!user) return user;
+  const raw = user.role;
+  const normalizedRole: UserRole =
+    raw === 'govt_org' || raw === 'government' ? 'govt_org' : 'farmer';
+  return {
+    ...user,
+    role: normalizedRole,
+    accountStatus: user.accountStatus || 'verified',
+  };
+}
+
 class AuthService {
+  isGovtOrg(user?: User | null): boolean {
+    if (!user) return false;
+    const raw = (user as any).role;
+    return (raw === 'govt_org' || raw === 'government') && (user.accountStatus || 'verified') === 'verified';
+  }
+
+  isSuperAdmin(user?: User | null): boolean {
+    if (!user || !this.isGovtOrg(user)) return false;
+    return Boolean(user.isSuperAdmin || user.permissions?.includes('super_admin'));
+  }
+
+  canVerifyAccounts(user?: User | null): boolean {
+    if (!user || !this.isGovtOrg(user)) return false;
+    return Boolean(
+      user.isSuperAdmin ||
+      user.permissions?.includes('super_admin') ||
+      user.permissions?.includes('users:verify')
+    );
+  }
+
+  getDefaultPortalPath(user?: User | null): string {
+    return this.isGovtOrg(user) ? '/app/gov' : '/app';
+  }
+
   /**
    * Login user via backend API (MongoDB Atlas).
    * No local fallback — real authentication only.
@@ -62,10 +109,66 @@ class AuthService {
       if (contentType.includes('application/json')) {
         const data = await safeReadJson(response);
         if (data && response.ok && data.status === 'success' && data.user && data.token) {
-          this.saveSession(data.user, data.token, credentials.rememberMe);
-          return { success: true, user: data.user, token: data.token };
+          const normalized = normalizeUserRole(data.user);
+          this.saveSession(normalized, data.token, credentials.rememberMe);
+          return {
+            success: true,
+            user: normalized,
+            token: data.token,
+            accountStatus: normalized.accountStatus,
+          };
         }
-        return { success: false, error: data?.message || 'Invalid email or password.' };
+        if (
+          data?.code === 'ACCOUNT_PENDING_VERIFICATION' ||
+          data?.accountStatus === 'pending'
+        ) {
+          return {
+            success: false,
+            pendingVerification: true,
+            accountStatus: 'pending',
+            code: data.code,
+            user: data.user ? normalizeUserRole(data.user) : undefined,
+            error:
+              data.message ||
+              'Your Government / Organization account is pending administrator verification.',
+          };
+        }
+        if (
+          data?.code === 'ACCOUNT_REJECTED' ||
+          data?.accountStatus === 'rejected'
+        ) {
+          return {
+            success: false,
+            accountStatus: 'rejected',
+            rejectionReason: data.rejectionReason,
+            code: data.code,
+            user: data.user ? normalizeUserRole(data.user) : undefined,
+            error:
+              data.message ||
+              'Your Government / Organization account verification was declined.',
+          };
+        }
+        if (
+          data?.code === 'ACCOUNT_SUSPENDED' ||
+          data?.accountStatus === 'suspended'
+        ) {
+          return {
+            success: false,
+            accountStatus: 'suspended',
+            suspendedReason: data.suspendedReason,
+            code: data.code,
+            user: data.user ? normalizeUserRole(data.user) : undefined,
+            error:
+              data.message ||
+              'Your account has been suspended by an administrator.',
+          };
+        }
+        return {
+          success: false,
+          accountStatus: data?.accountStatus,
+          code: data?.code,
+          error: data?.message || 'Invalid email or password.',
+        };
       }
 
       return {
@@ -95,9 +198,31 @@ class AuthService {
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const resData = await safeReadJson(response);
+        if (
+          resData &&
+          response.ok &&
+          resData.status === 'pending_verification'
+        ) {
+          return {
+            success: false,
+            pendingVerification: true,
+            accountStatus: 'pending',
+            user: resData.user ? normalizeUserRole(resData.user) : undefined,
+            error:
+              resData.message ||
+              'Government / Organization account registered and pending administrator verification.',
+          };
+        }
+
         if (resData && response.ok && resData.status === 'success' && resData.user && resData.token) {
-          this.saveSession(resData.user, resData.token);
-          return { success: true, user: resData.user, token: resData.token };
+          const normalized = normalizeUserRole(resData.user);
+          this.saveSession(normalized, resData.token);
+          return {
+            success: true,
+            user: normalized,
+            token: resData.token,
+            accountStatus: normalized.accountStatus,
+          };
         }
         return { success: false, error: resData?.message || 'Failed to create account.' };
       }
@@ -143,8 +268,9 @@ class AuthService {
       if (response.ok) {
         const data = await safeReadJson(response);
         if (data && data.status === 'success' && data.user) {
-          localStorage.setItem('agrin_current_user', JSON.stringify(data.user));
-          return data.user;
+          const normalized = normalizeUserRole(data.user);
+          localStorage.setItem('agrin_current_user', JSON.stringify(normalized));
+          return normalized;
         }
       } else if (response.status === 401 || response.status === 403) {
         this.clearSession();
@@ -175,7 +301,7 @@ class AuthService {
     try {
       const parsed = JSON.parse(stored);
       if (!parsed || !parsed.id) return null;
-      return parsed;
+      return normalizeUserRole(parsed);
     } catch {
       return null;
     }
@@ -222,20 +348,22 @@ class AuthService {
     if (!user || !user.id) {
       return false;
     }
+    if (user.accountStatus && user.accountStatus !== 'verified') {
+      return false;
+    }
     return true;
   }
 
   saveSession(user: User, token: string, rememberMe = true): void {
-    // If rememberMe is true, persist in localStorage (survives browser close).
-    // If false, use sessionStorage (cleared when browser tab closes).
+    const normalized = normalizeUserRole(user);
     if (rememberMe) {
       localStorage.setItem('agrin_auth_token', token);
-      localStorage.setItem('agrin_current_user', JSON.stringify(user));
+      localStorage.setItem('agrin_current_user', JSON.stringify(normalized));
       sessionStorage.removeItem('agrin_auth_token');
     } else {
       sessionStorage.setItem('agrin_auth_token', token);
+      localStorage.setItem('agrin_current_user', JSON.stringify(normalized));
       localStorage.removeItem('agrin_auth_token');
-      localStorage.removeItem('agrin_current_user');
     }
   }
 

@@ -159,6 +159,32 @@ export const config = {
     }
     return 'http://localhost:3000';
   },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Super-Admin Bootstrap & External Provider Keys
+  // ───────────────────────────────────────────────────────────────────────────
+
+  get superAdminEmails(): string[] {
+    const raw = process.env.SUPER_ADMIN_EMAILS || '';
+    return raw
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  },
+
+  isSuperAdminEmail(email?: string): boolean {
+    if (!email) return false;
+    const clean = email.trim().toLowerCase();
+    return this.superAdminEmails.includes(clean);
+  },
+
+  get dataGovInApiKey(): string {
+    return (process.env.DATA_GOV_IN_API_KEY || '').trim();
+  },
+
+  get firmsMapKey(): string {
+    return (process.env.FIRMS_MAP_KEY || '').trim();
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

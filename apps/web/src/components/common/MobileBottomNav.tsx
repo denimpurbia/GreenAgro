@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, MapPin, Satellite, Bot, MoreHorizontal } from 'lucide-react';
+import { Home, MapPin, Satellite, Bot, MoreHorizontal, Building2, Waves, Users, Mountain } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { authService } from '../../services/authService';
 
 interface MobileBottomNavProps {
   onToggleMore: () => void;
@@ -9,14 +10,22 @@ interface MobileBottomNavProps {
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onToggleMore, isMoreOpen }) => {
-  const { t } = useApp();
+  const { t, user } = useApp();
+  const isGovt = authService.isGovtOrg(user);
 
-  const navItems = [
-    { to: '/app', icon: Home, labelKey: 'nav.home', exact: true },
-    { to: '/app/farm', icon: MapPin, labelKey: 'nav.myFarm' },
-    { to: '/app/satellite', icon: Satellite, labelKey: 'nav.satellite' },
-    { to: '/app/assistant', icon: Bot, labelKey: 'nav.aiAssistant' },
-  ];
+  const navItems = isGovt
+    ? [
+        { to: '/app/gov', icon: Building2, label: 'Admin', exact: true },
+        { to: '/app/lakes', icon: Waves, label: 'Lakes' },
+        { to: '/app/reports', icon: Users, label: 'Reports' },
+        { to: '/app/landscape', icon: Mountain, label: 'Landscape' },
+      ]
+    : [
+        { to: '/app', icon: Home, label: t('nav.home'), exact: true },
+        { to: '/app/farm', icon: MapPin, label: t('nav.myFarm') },
+        { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') },
+        { to: '/app/assistant', icon: Bot, label: t('nav.aiAssistant') },
+      ];
 
   return (
     <nav
@@ -42,7 +51,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onToggleMore, 
               <>
                 <item.icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 stroke-[2.4]' : 'stroke-[1.9]'}`} />
                 <span className="text-[11px] mt-0.5 truncate max-w-[64px] text-center leading-tight">
-                  {t(item.labelKey)}
+                  {item.label}
                 </span>
                 {isActive && (
                   <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-agri-800" />

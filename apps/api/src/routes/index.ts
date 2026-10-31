@@ -62,7 +62,20 @@ apiRouter.get('/health', (_req: Request, res: Response) => {
 
 // POST /api/auth/register
 apiRouter.post('/auth/register', async (req: Request, res: Response) => {
-  const { name, email, password, phone, role, location } = req.body;
+  const {
+    name,
+    email,
+    password,
+    phone,
+    role,
+    location,
+    organizationName,
+    designation,
+    state,
+    district,
+    organizationType,
+    officialIdInfo,
+  } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({
@@ -70,6 +83,30 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
       message: 'Name, email, and password are required.',
       code: 'MISSING_FIELDS',
     });
+  }
+
+  // Only allow the two official roles: 'farmer' or 'govt_org' (with 'government' normalized to 'govt_org')
+  const requestedRole = role ? String(role).trim() : 'farmer';
+  if (requestedRole !== 'farmer' && requestedRole !== 'govt_org' && requestedRole !== 'government') {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Invalid account role. Allowed roles are Farmer ("farmer") and Government / Organization ("govt_org").',
+      code: 'INVALID_ROLE',
+    });
+  }
+
+  const normalizedRole: 'farmer' | 'govt_org' =
+    requestedRole === 'govt_org' || requestedRole === 'government' ? 'govt_org' : 'farmer';
+
+  if (normalizedRole === 'govt_org') {
+    if (!organizationName || !designation || !state || !district || !organizationType) {
+      return res.status(400).json({
+        status: 'error',
+        message:
+          'Government / Organization registration requires organizationName, designation, state, district, and organizationType.',
+        code: 'MISSING_GOVT_FIELDS',
+      });
+    }
   }
 
   try {
@@ -88,14 +125,34 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
       email,
       password,
       phone,
-      role: role || 'farmer',
+      role: normalizedRole,
       location,
+      organizationName,
+      designation,
+      state,
+      district,
+      organizationType,
+      officialIdInfo,
     });
+
+    // If the account is pending verification (Government / Organization accounts not in SUPER_ADMIN_EMAILS),
+    // do NOT issue an active session token; return pending_verification status clearly.
+    if (user.accountStatus === 'pending') {
+      return res.status(201).json({
+        status: 'pending_verification',
+        pendingVerification: true,
+        accountStatus: 'pending',
+        user,
+        message:
+          'Government / Organization account registered and submitted for administrator verification. You will be able to access the Government Admin Portal once verified.',
+      });
+    }
 
     const token = UserFarmService.signToken(user);
 
     return res.status(201).json({
       status: 'success',
+      accountStatus: user.accountStatus,
       user,
       token,
       message: 'Account created successfully.',
@@ -151,6 +208,73 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
 
     const { passwordHash: _, ...cleanUser } = userWithHash;
 
+    // Enforce verification & suspension status on login
+    if (cleanUser.accountStatus === 'pending') {
+      return res.status(403).json({
+        status: 'error',
+        code: 'ACCOUNT_PENDING_VERIFICATION',
+        pendingVerification: true,
+        accountStatus: 'pending',
+        user: {
+          id: cleanUser.id,
+          name: cleanUser.name,
+          email: cleanUser.email,
+          role: cleanUser.role,
+          accountStatus: 'pending',
+          organizationName: cleanUser.organizationName,
+          designation: cleanUser.designation,
+          state: cleanUser.state,
+          district: cleanUser.district,
+          organizationType: cleanUser.organizationType,
+          createdAt: cleanUser.createdAt,
+        },
+        message:
+          'Your Government / Organization account is pending administrator verification. Access to the Government Admin Portal will be enabled once your credentials are verified.',
+      });
+    }
+
+    if (cleanUser.accountStatus === 'rejected') {
+      const reason = cleanUser.rejectionReason || cleanUser.verificationNotes || 'Credentials could not be verified.';
+      return res.status(403).json({
+        status: 'error',
+        code: 'ACCOUNT_REJECTED',
+        accountStatus: 'rejected',
+        rejectionReason: reason,
+        user: {
+          id: cleanUser.id,
+          name: cleanUser.name,
+          email: cleanUser.email,
+          role: cleanUser.role,
+          accountStatus: 'rejected',
+          organizationName: cleanUser.organizationName,
+          rejectionReason: reason,
+          verifiedAt: cleanUser.verifiedAt,
+        },
+        message: `Your Government / Organization account verification was declined: ${reason}`,
+      });
+    }
+
+    if (cleanUser.accountStatus === 'suspended') {
+      const reason = cleanUser.suspendedReason || cleanUser.verificationNotes || 'Administrative suspension.';
+      return res.status(403).json({
+        status: 'error',
+        code: 'ACCOUNT_SUSPENDED',
+        accountStatus: 'suspended',
+        suspendedReason: reason,
+        user: {
+          id: cleanUser.id,
+          name: cleanUser.name,
+          email: cleanUser.email,
+          role: cleanUser.role,
+          accountStatus: 'suspended',
+          organizationName: cleanUser.organizationName,
+          suspendedReason: reason,
+          suspendedAt: cleanUser.suspendedAt,
+        },
+        message: `Your account access has been suspended: ${reason}`,
+      });
+    }
+
     const token = UserFarmService.signToken(cleanUser);
 
     return res.json({
@@ -198,6 +322,22 @@ apiRouter.put(
         });
       }
 
+      // Security: Never allow self-modification of role, accountStatus, or permissions via profile update
+      if (
+        req.body.role !== undefined ||
+        req.body.accountStatus !== undefined ||
+        req.body.permissions !== undefined ||
+        req.body.isSuperAdmin !== undefined ||
+        req.body.customPermissions !== undefined ||
+        req.body.verifiedBy !== undefined
+      ) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Forbidden: Role, verification status, and permissions cannot be modified through profile settings.',
+          code: 'ROLE_CHANGE_FORBIDDEN',
+        });
+      }
+
       const {
         name,
         phone,
@@ -205,6 +345,11 @@ apiRouter.put(
         language,
         preferences,
         avatarUrl,
+        organizationName,
+        designation,
+        state,
+        district,
+        organizationType,
       } = req.body;
 
       const updateData: any = {};
@@ -227,6 +372,14 @@ apiRouter.put(
 
       if (typeof avatarUrl === 'string') {
         updateData.avatarUrl = avatarUrl;
+      }
+
+      if (req.user?.role === 'govt_org') {
+        if (typeof organizationName === 'string') updateData.organizationName = organizationName.trim();
+        if (typeof designation === 'string') updateData.designation = designation.trim();
+        if (typeof state === 'string') updateData.state = state.trim();
+        if (typeof district === 'string') updateData.district = district.trim();
+        if (typeof organizationType === 'string') updateData.organizationType = organizationType.trim();
       }
 
       if (
@@ -276,19 +429,7 @@ apiRouter.put(
         });
       }
 
-      const cleanUser = {
-        id: updatedUser._id.toString(),
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone || '',
-        role: updatedUser.role,
-        location: updatedUser.location || '',
-        language: updatedUser.language,
-        avatarUrl:
-          updatedUser.avatarUrl ||
-          '/images/farmer-hero.jpg',
-        preferences: updatedUser.preferences,
-      };
+      const cleanUser = UserFarmService.mapUserDocToCleanUser(updatedUser);
 
       return res.status(200).json({
         status: 'success',
@@ -422,24 +563,9 @@ apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
     console.log('[Google OAuth] Looking for existing user');
     let existingDoc = await UserModel.findOne({ email: cleanEmail });
 
-    let finalUser: {
-      id: string;
-      name: string;
-      email: string;
-      phone: string;
-      role: 'farmer' | 'expert' | 'government' | 'agronomist' | 'researcher' | 'cooperative';
-      location: string;
-      language: 'en' | 'hi';
-      avatarUrl: string;
-      preferences: {
-        weatherAlerts: boolean;
-        diseaseAlerts: boolean;
-        weeklyReports: boolean;
-        marketUpdates: boolean;
-      };
-    };
+    let finalUser = existingDoc ? UserFarmService.mapUserDocToCleanUser(existingDoc) : null;
 
-    if (existingDoc) {
+    if (existingDoc && finalUser) {
       console.log('[Google OAuth] Existing user found');
       let needsSave = false;
       if (!existingDoc.googleId) {
@@ -454,23 +580,7 @@ apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
         await existingDoc.save();
         console.log('[Google OAuth] MongoDB user saved');
       }
-
-      finalUser = {
-        id: existingDoc._id.toString(),
-        name: existingDoc.name,
-        email: existingDoc.email,
-        phone: existingDoc.phone || '',
-        role: existingDoc.role,
-        location: existingDoc.location || '',
-        language: existingDoc.language || 'en',
-        avatarUrl: existingDoc.avatarUrl || '/images/farmer-hero.jpg',
-        preferences: existingDoc.preferences || {
-          weatherAlerts: true,
-          diseaseAlerts: true,
-          weeklyReports: true,
-          marketUpdates: false,
-        },
-      };
+      finalUser = UserFarmService.mapUserDocToCleanUser(existingDoc);
     } else {
       console.log('[Google OAuth] Creating new user');
       const newUser = new UserModel({
@@ -479,6 +589,7 @@ apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
         googleId: googleUser.sub,
         phone: '',
         role: 'farmer',
+        accountStatus: 'verified',
         location: '',
         language: 'en',
         avatarUrl: googleUser.picture || '/images/farmer-hero.jpg',
@@ -492,17 +603,17 @@ apiRouter.get('/auth/google/callback', async (req: Request, res: Response) => {
       await newUser.save();
       console.log('[Google OAuth] MongoDB user saved');
 
-      finalUser = {
-        id: newUser._id.toString(),
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone || '',
-        role: newUser.role,
-        location: newUser.location || '',
-        language: newUser.language || 'en',
-        avatarUrl: newUser.avatarUrl,
-        preferences: newUser.preferences,
-      };
+      finalUser = UserFarmService.mapUserDocToCleanUser(newUser);
+    }
+
+    if (finalUser.accountStatus === 'pending') {
+      console.log('[Google OAuth] Account is pending administrator verification');
+      return errorRedirect('pending_verification');
+    }
+
+    if (finalUser.accountStatus === 'rejected' || finalUser.accountStatus === 'suspended') {
+      console.log('[Google OAuth] Account is rejected or suspended');
+      return errorRedirect('account_suspended');
     }
 
     // Issue GreenAgro JWT using the exact same mechanism as email/password login
@@ -786,8 +897,7 @@ apiRouter.post(
 
       let savedObservation: any = null;
 
-      const userId =
-        req.user?.id || (req.body.userId as string);
+      const userId = req.user?.id;
 
       if (userId && isConnectedToDb) {
         try {
@@ -1047,8 +1157,7 @@ apiRouter.post(
     );
 
     if (reply.status === 'success') {
-      const userId =
-        req.user?.id || (req.body.userId as string);
+      const userId = req.user?.id;
 
       if (userId && isConnectedToDb) {
         try {

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { apiRouter } from './routes';
+import { modulesRouter } from './routes/modules';
 import { config } from './config';
 import { connectDatabase } from './database';
 
@@ -92,6 +93,8 @@ app.get('/', (_req, res) => {
 // Mount API routes under /api and root
 app.use('/api', apiRouter);
 app.use(apiRouter);
+app.use('/api', modulesRouter);
+app.use(modulesRouter);
 
 // Global error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

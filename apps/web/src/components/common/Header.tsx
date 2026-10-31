@@ -100,8 +100,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
               </div>
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-xs font-bold text-gray-900 leading-tight">{user?.name ?? ''}</span>
-                <span className="text-[11px] text-gray-500 capitalize leading-tight">
-                  {user?.role ?? ''}
+                <span className="text-[11px] text-gray-500 leading-tight">
+                  {user?.role === 'govt_org' ? 'Govt / Org' : 'Farmer'}
                 </span>
               </div>
             </Link>
