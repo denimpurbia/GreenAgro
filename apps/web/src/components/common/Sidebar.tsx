@@ -25,7 +25,7 @@ import { useApp } from '../../context/AppContext';
 import { authService } from '../../services/authService';
 
 export const Sidebar: React.FC = () => {
-  const { t, user } = useApp();
+  const { t, user, language } = useApp();
   const isGovt = authService.isGovtOrg(user);
   const isSuper = authService.isSuperAdmin(user);
   const canVerify = authService.canVerifyAccounts(user);
@@ -36,6 +36,7 @@ export const Sidebar: React.FC = () => {
     { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') || 'Satellite View' },
     { to: '/app/soil', icon: Sprout, label: t('nav.soilHealth') || 'Soil Health' },
     { to: '/app/weather', icon: CloudSun, label: t('nav.weather') || 'Weather' },
+    { to: '/app/alerts', icon: Bell, label: language === 'hi' ? 'अलर्ट एवं सूचनाएं' : 'Alerts & Advisories' },
     { to: '/app/disease', icon: Stethoscope, label: t('nav.cropDoctor') || 'Crop Doctor' },
     { to: '/app/market', icon: Store, label: t('nav.market') || 'Fair Market' },
     { to: '/app/reports', icon: Users, label: t('nav.reports') || 'Community Reports' },

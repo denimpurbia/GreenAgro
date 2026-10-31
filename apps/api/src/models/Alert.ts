@@ -10,7 +10,18 @@ export type AlertCategory =
   | 'fire_nearby'
   | 'land_disturbance'
   | 'mandi_below_msp'
-  | 'target_price_reached';
+  | 'target_price_reached'
+  | 'weather_alert'
+  | 'heatwave'
+  | 'cold_wave'
+  | 'frost'
+  | 'thunderstorm'
+  | 'high_wind'
+  | 'crop_disease'
+  | 'pest_outbreak'
+  | 'admin_broadcast'
+  | 'general_advisory'
+  | string;
 
 export interface IAlert extends Document {
   userId?: string; // Optional: specific to a user/farm or global broadcast
@@ -21,7 +32,9 @@ export interface IAlert extends Document {
   titleHi: string;
   message: string;
   messageHi: string;
+  actionLink?: string;
   isRead: boolean;
+  readBy?: string[]; // Array of user IDs who have marked this alert as read
   metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -34,17 +47,7 @@ const AlertSchema = new Schema<IAlert>(
     category: {
       type: String,
       required: true,
-      enum: [
-        'water_stress',
-        'severe_erosion',
-        'heavy_rainfall',
-        'lake_water_drop',
-        'ndci_increase',
-        'fire_nearby',
-        'land_disturbance',
-        'mandi_below_msp',
-        'target_price_reached',
-      ],
+      default: 'general_advisory',
     },
     severity: {
       type: String,
@@ -55,7 +58,9 @@ const AlertSchema = new Schema<IAlert>(
     titleHi: { type: String, default: '' },
     message: { type: String, required: true },
     messageHi: { type: String, default: '' },
+    actionLink: { type: String, default: '' },
     isRead: { type: Boolean, default: false },
+    readBy: { type: [String], default: [], index: true },
     metadata: { type: Schema.Types.Mixed },
   },
   { timestamps: true }

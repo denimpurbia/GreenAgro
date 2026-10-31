@@ -72,6 +72,7 @@ export const App: React.FC = () => {
               <Route path="knowledge" element={<KnowledgePage />} />
               <Route path="schemes" element={<SchemesPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="alerts" element={<AlertsPage />} />
 
               {/* Government / Organization Admin Protected Modules */}
               <Route element={<RoleProtectedRoute allowedRoles={['govt_org']} />}>
@@ -84,7 +85,6 @@ export const App: React.FC = () => {
                 <Route path="lakes/:slug" element={<LakeDetailPage />} />
                 <Route path="watershed" element={<WatershedPage />} />
                 <Route path="aravalli" element={<AravalliPage />} />
-                <Route path="alerts" element={<AlertsPage />} />
               </Route>
             </Route>
           </Route>

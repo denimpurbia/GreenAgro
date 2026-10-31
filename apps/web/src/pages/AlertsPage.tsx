@@ -5,6 +5,17 @@ import {
   Info,
   Check,
   Plus,
+  CloudRain,
+  Sun,
+  Snowflake,
+  Wind,
+  Bug,
+  Megaphone,
+  TrendingUp,
+  Waves,
+  Mountain,
+  Flame,
+  ShieldAlert,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { authService } from '../services/authService';
@@ -14,13 +25,17 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 export const AlertsPage: React.FC = () => {
   const { language, user } = useApp();
   const isHi = language === 'hi';
-  const isGovt = authService.isGovtOrg(user);
+  const isGovt = authService.isGovtOrg(user) || Boolean(user?.isSuperAdmin) || (user as any)?.role === 'admin';
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [, setLoading] = useState(true);
+
+  // Admin Broadcast form fields
   const [title, setTitle] = useState('');
+  const [titleHi, setTitleHi] = useState('');
   const [message, setMessage] = useState('');
-  const [category, setCategory] = useState('severe_erosion');
+  const [messageHi, setMessageHi] = useState('');
+  const [category, setCategory] = useState('heavy_rainfall');
   const [severity, setSeverity] = useState<'info' | 'warning' | 'critical'>('warning');
   const [creating, setCreating] = useState(false);
 
@@ -43,6 +58,8 @@ export const AlertsPage: React.FC = () => {
 
   useEffect(() => {
     fetchAlerts();
+    const interval = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(interval);
   }, [fetchAlerts]);
 
   const handleCreateAlert = async (e: React.FormEvent) => {
@@ -61,13 +78,17 @@ export const AlertsPage: React.FC = () => {
           category,
           severity,
           title: title.trim(),
+          titleHi: (titleHi || title).trim(),
           message: message.trim(),
+          messageHi: (messageHi || message).trim(),
         }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
         setTitle('');
+        setTitleHi('');
         setMessage('');
+        setMessageHi('');
         fetchAlerts();
       }
     } catch {
@@ -107,28 +128,58 @@ export const AlertsPage: React.FC = () => {
     }
   };
 
+  const getAlertIcon = (cat: string, sev: string) => {
+    switch (cat) {
+      case 'heavy_rainfall':
+      case 'weather_alert':
+      case 'thunderstorm':
+        return { icon: CloudRain, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' };
+      case 'heatwave':
+        return { icon: Sun, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' };
+      case 'cold_wave':
+      case 'frost':
+        return { icon: Snowflake, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' };
+      case 'high_wind':
+        return { icon: Wind, color: 'text-teal-600', bg: 'bg-teal-50 border-teal-100' };
+      case 'crop_disease':
+      case 'pest_outbreak':
+        return { icon: Bug, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-100' };
+      case 'admin_broadcast':
+        return { icon: Megaphone, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' };
+      case 'mandi_below_msp':
+      case 'target_price_reached':
+        return { icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' };
+      case 'lake_water_drop':
+      case 'ndci_increase':
+        return { icon: Waves, color: 'text-cyan-600', bg: 'bg-cyan-50 border-cyan-100' };
+      case 'severe_erosion':
+      case 'land_disturbance':
+        return { icon: Mountain, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100' };
+      case 'fire_nearby':
+        return { icon: Flame, color: 'text-red-600', bg: 'bg-red-50 border-red-100' };
+      default:
+        return sev === 'critical'
+          ? { icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50 border-red-100' }
+          : { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' };
+    }
+  };
+
   const getSeverityStyle = (sev: string) => {
     switch (sev) {
       case 'critical':
         return {
           border: 'border-red-200 bg-red-50/70',
           badge: 'bg-red-100 text-red-800 border-red-200',
-          icon: AlertTriangle,
-          iconColor: 'text-red-600',
         };
       case 'warning':
         return {
           border: 'border-amber-200 bg-amber-50/60',
           badge: 'bg-amber-100 text-amber-800 border-amber-200',
-          icon: AlertTriangle,
-          iconColor: 'text-amber-600',
         };
       default:
         return {
           border: 'border-sky-200 bg-sky-50/50',
           badge: 'bg-sky-100 text-sky-800 border-sky-200',
-          icon: Info,
-          iconColor: 'text-sky-600',
         };
     }
   };
@@ -142,12 +193,12 @@ export const AlertsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f291e] flex items-center gap-2.5">
             <Bell className="w-7 h-7 text-agri-700 stroke-[2.2]" />
-            <span>{isHi ? 'अलर्ट एवं एकीकृत सूचना केंद्र' : 'Unified Regional Alerts Center'}</span>
+            <span>{isHi ? 'अलर्ट एवं एकीकृत सूचना केंद्र' : 'Unified Alerts & Advisory Center'}</span>
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             {isHi
-              ? 'मृदा क्षरण, अग्नि, जल तनाव, मंडी भाव एवं झील स्तर से संबंधित वास्तविक अलर्ट'
-              : 'Real-time ecological, watershed, fire, and market advisory notifications'}
+              ? 'वास्तविक मौसम चेतावनी, फसल रोग अलर्ट, मंडी भाव एवं प्रशासनिक सूचनाएं'
+              : 'Real weather warnings, crop disease alerts, market prices & official broadcast notices'}
           </p>
         </div>
 
@@ -162,60 +213,117 @@ export const AlertsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Govt / Org Broadcast Regional Alert Form */}
+      {/* Govt / Super Admin Broadcast Alert Form */}
       {isGovt && (
-        <div className="bg-white border border-[#e8ece8] rounded-2xl p-5 shadow-xs space-y-3">
-          <h3 className="text-sm font-black text-gray-900">
-            Broadcast Official Regional Environmental / Agricultural Alert
-          </h3>
-          <form onSubmit={handleCreateAlert} className="grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="md:col-span-3 border border-gray-200 rounded-xl px-3 py-2 bg-[#f8faf8]"
-            >
-              <option value="severe_erosion">Watershed Erosion Warning</option>
-              <option value="lake_water_drop">Lake Water / Quality Notice</option>
-              <option value="fire_nearby">Aravalli Thermal / Fire Alert</option>
-              <option value="mandi_below_msp">Mandi Below MSP Alert</option>
-              <option value="heatwave">Heatwave / Weather Advisory</option>
-            </select>
+        <div className="bg-white border border-[#e8ece8] rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-agri-700" />
+              <span>Broadcast Official Advisory / Alert to Farmers</span>
+            </h3>
+            <span className="text-[11px] font-semibold text-agri-700 bg-agri-50 px-2 py-0.5 rounded-md border border-agri-200">
+              Admin & Govt Portal
+            </span>
+          </div>
 
-            <select
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value as any)}
-              className="md:col-span-2 border border-gray-200 rounded-xl px-3 py-2 bg-[#f8faf8]"
-            >
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="critical">Critical</option>
-            </select>
+          <form onSubmit={handleCreateAlert} className="space-y-3 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="md:col-span-6">
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Alert Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 bg-[#f8faf8] font-medium"
+                >
+                  <option value="heavy_rainfall">🌧️ Heavy Rainfall / Storm Alert (अतिवृष्टि)</option>
+                  <option value="weather_alert">⛅ Severe Weather Advisory (मौसम चेतावनी)</option>
+                  <option value="heatwave">☀️ Heatwave / High Temp (भीषण गर्मी / लू)</option>
+                  <option value="cold_wave">❄️ Cold Wave & Frost Warning (शीतलहर / पाला)</option>
+                  <option value="high_wind">💨 High Wind / Gale Warning (तेज़ हवा / आंधी)</option>
+                  <option value="crop_disease">🐛 Pest & Disease Outbreak (कीट व रोग प्रकोप)</option>
+                  <option value="admin_broadcast">📢 Official Admin Broadcast (प्रशासनिक सूचना)</option>
+                  <option value="general_advisory">🌾 General Agricultural Advisory (कृषि सलाह)</option>
+                  <option value="severe_erosion">⛰️ Watershed Erosion Warning (मृदा क्षरण)</option>
+                  <option value="lake_water_drop">🌊 Lake Water / Quality Notice (झील जल स्तर)</option>
+                  <option value="fire_nearby">🔥 Aravalli Thermal / Fire Alert (अग्नि अलर्ट)</option>
+                  <option value="mandi_below_msp">💰 Mandi Below MSP Notice (मंडी भाव)</option>
+                </select>
+              </div>
 
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Alert Title"
-              className="md:col-span-3 border border-gray-200 rounded-xl px-3 py-2"
-            />
+              <div className="md:col-span-6">
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Severity Level</label>
+                <select
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value as any)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 bg-[#f8faf8] font-medium"
+                >
+                  <option value="info">ℹ️ Info (Low urgency)</option>
+                  <option value="warning">⚠️ Warning (Moderate urgency)</option>
+                  <option value="critical">🚨 Critical (Immediate action required)</option>
+                </select>
+              </div>
+            </div>
 
-            <input
-              type="text"
-              required
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Alert message details..."
-              className="md:col-span-3 border border-gray-200 rounded-xl px-3 py-2"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Title (English) *</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Heavy Rainfall Expected in Udaipur Catchment"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={creating}
-              className="md:col-span-1 bg-agri-800 hover:bg-agri-900 text-white rounded-xl font-bold flex items-center justify-center py-2 cursor-pointer disabled:opacity-50"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Title (Hindi / मेवाड़ी)</label>
+                <input
+                  type="text"
+                  value={titleHi}
+                  onChange={(e) => setTitleHi(e.target.value)}
+                  placeholder="उदा. उदयपुर क्षेत्र में भारी वर्षा की चेतावनी"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Message (English) *</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Detailed instructions for farmers..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Message (Hindi / मेवाड़ी)</label>
+                <textarea
+                  rows={2}
+                  value={messageHi}
+                  onChange={(e) => setMessageHi(e.target.value)}
+                  placeholder="किसानों के लिए विस्तृत सलाह..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={creating}
+                className="px-5 py-2.5 bg-agri-800 hover:bg-agri-900 text-white rounded-xl font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{creating ? 'Publishing...' : 'Broadcast Alert to All Farmers'}</span>
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -225,15 +333,20 @@ export const AlertsPage: React.FC = () => {
         {alerts.length === 0 ? (
           <div className="bg-white border border-[#e8ece8] rounded-2xl p-12 text-center text-gray-400">
             <Bell className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm font-semibold">No active regional alerts in database.</p>
+            <p className="text-sm font-semibold">
+              {isHi ? 'डेटाबेस में कोई सक्रिय अलर्ट नहीं है।' : 'No active alerts in database.'}
+            </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Zero fabricated alerts are displayed. Real alerts appear here when triggered or issued by an administrator.
+              {isHi
+                ? 'प्रशासनिक सूचना अथवा वास्तविक मौसम स्थिति बदलने पर अलर्ट यहाँ दिखाई देंगे।'
+                : 'Real alerts appear here automatically when triggered by live weather or broadcast by an administrator.'}
             </p>
           </div>
         ) : (
           alerts.map((alert) => {
             const style = getSeverityStyle(alert.severity);
-            const Icon = style.icon;
+            const iconObj = getAlertIcon(alert.category, alert.severity);
+            const Icon = iconObj.icon;
 
             return (
               <div
@@ -243,8 +356,8 @@ export const AlertsPage: React.FC = () => {
                 }`}
               >
                 <div className="flex items-start gap-3.5">
-                  <div className={`p-2.5 rounded-xl bg-white/90 border border-gray-100 shrink-0`}>
-                    <Icon className={`w-5 h-5 ${style.iconColor}`} />
+                  <div className={`p-2.5 rounded-xl border shrink-0 ${iconObj.bg}`}>
+                    <Icon className={`w-5 h-5 ${iconObj.color}`} />
                   </div>
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -264,8 +377,8 @@ export const AlertsPage: React.FC = () => {
                       {isHi ? alert.messageHi || alert.message : alert.message}
                     </p>
                     <span className="text-[11px] text-gray-400 block pt-0.5">
-                      Category: {alert.category?.replace(/_/g, ' ')} •{' '}
-                      {alert.createdAt ? new Date(alert.createdAt).toLocaleDateString() : ''}
+                      Category: {alert.category ? alert.category.replace(/_/g, ' ') : 'Advisory'} •{' '}
+                      {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : ''}
                     </span>
                   </div>
                 </div>

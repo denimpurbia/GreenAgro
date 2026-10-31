@@ -31,7 +31,7 @@ interface MobileDrawerProps {
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
-  const { t, user } = useApp();
+  const { t, user, language } = useApp();
 
   if (!isOpen) return null;
 
@@ -44,6 +44,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
     { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') || 'Satellite View' },
     { to: '/app/soil', icon: Sprout, label: t('nav.soilHealth') || 'Soil Health' },
     { to: '/app/weather', icon: CloudSun, label: t('nav.weather') || 'Weather' },
+    { to: '/app/alerts', icon: Bell, label: language === 'hi' ? 'अलर्ट एवं सूचनाएं' : 'Alerts & Advisories' },
     { to: '/app/disease', icon: Stethoscope, label: t('nav.cropDoctor') || 'Crop Doctor' },
     { to: '/app/market', icon: Store, label: t('nav.market') || 'Fair Market' },
     { to: '/app/reports', icon: Users, label: t('nav.reports') || 'Community Reports' },

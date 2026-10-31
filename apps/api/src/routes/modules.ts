@@ -915,13 +915,12 @@ modulesRouter.get('/landscape', requireAuth, requireGovtAdmin, handleLandscapeOv
 modulesRouter.get('/landscape/overview', requireAuth, requireGovtAdmin, handleLandscapeOverview);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. Unified Alerts Engine Routes (Government / Organization Admin Portal)
+// 7. Unified Alerts Engine Routes (Farmer Portal & Government Admin)
 // ─────────────────────────────────────────────────────────────────────────────
 
 modulesRouter.get(
   '/alerts',
   requireAuth,
-  requireGovtAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const alerts = await AlertService.getUserAlerts(req.user?.id);
@@ -935,10 +934,23 @@ modulesRouter.get(
 modulesRouter.post(
   '/alerts',
   requireAuth,
-  requireGovtAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { category, severity, title, titleHi, message, messageHi, actionLink } = req.body;
+      const userRole = req.user?.role;
+      const isAuthorized =
+        userRole === 'govt_org' ||
+        Boolean(req.user?.isSuperAdmin) ||
+        Boolean(req.user?.permissions?.includes('alerts:create')) ||
+        Boolean(req.user?.permissions?.includes('all'));
+
+      if (!isAuthorized) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only administrative accounts can broadcast official alerts.',
+        });
+      }
+
+      const { category, severity, title, titleHi, message, messageHi, actionLink, userId, farmId } = req.body;
       if (!category || !severity || !title || !message) {
         return res.status(400).json({
           success: false,
@@ -946,6 +958,8 @@ modulesRouter.post(
         });
       }
       const created = await AlertService.createAlert({
+        userId,
+        farmId,
         category,
         severity,
         title,
@@ -964,7 +978,6 @@ modulesRouter.post(
 modulesRouter.put(
   '/alerts/read-all',
   requireAuth,
-  requireGovtAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       await AlertService.markAllAsRead(req.user?.id);
@@ -978,11 +991,10 @@ modulesRouter.put(
 modulesRouter.put(
   '/alerts/:id/read',
   requireAuth,
-  requireGovtAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const alertId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const updated = await AlertService.markAsRead(alertId);
+      const updated = await AlertService.markAsRead(alertId, req.user?.id);
       return res.json({ success: true, alert: updated });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err.message || 'Failed to update alert' });
