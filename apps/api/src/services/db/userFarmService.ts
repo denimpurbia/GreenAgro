@@ -1110,22 +1110,27 @@ export class UserFarmService {
 
     if (isConnectedToDb) {
       try {
-        const farmDoc = new FarmModel({
-          ownerId,
-          name: farmData.name.trim(),
-          locationName: farmData.locationName?.trim() || '',
-          state: farmData.state || '',
-          country: farmData.country || '',
-          latitude: Number(farmData.latitude ?? 0),
-          longitude: Number(farmData.longitude ?? 0),
-          areaAcres: Number(farmData.areaAcres ?? 0),
-          primaryCrop: farmData.primaryCrop?.trim() || '',
-          cropVariety: farmData.cropVariety?.trim() || '',
-          soilType: farmData.soilType?.trim() || '',
-          irrigationMethod: farmData.irrigationMethod?.trim() || '',
-          boundary: farmData.boundary || [],
-        });
-        await farmDoc.save();
+        const farmDoc = await FarmModel.findOneAndUpdate(
+          { ownerId },
+          {
+            $set: {
+              ownerId,
+              name: farmData.name.trim(),
+              locationName: farmData.locationName?.trim() || '',
+              state: farmData.state || '',
+              country: farmData.country || '',
+              latitude: Number(farmData.latitude ?? 0),
+              longitude: Number(farmData.longitude ?? 0),
+              areaAcres: Number(farmData.areaAcres ?? 0),
+              primaryCrop: farmData.primaryCrop?.trim() || '',
+              cropVariety: farmData.cropVariety?.trim() || '',
+              soilType: farmData.soilType?.trim() || '',
+              irrigationMethod: farmData.irrigationMethod?.trim() || '',
+              boundary: Array.isArray(farmData.boundary) ? farmData.boundary : [],
+            },
+          },
+          { new: true, upsert: true, sort: { updatedAt: -1 } }
+        );
 
         return {
           id: farmDoc._id.toString(),
@@ -1180,7 +1185,7 @@ export class UserFarmService {
 
     if (isConnectedToDb) {
       try {
-        const found = await FarmModel.findOne({ ownerId });
+        const found = await FarmModel.findOne({ ownerId }).sort({ updatedAt: -1 });
         if (found) {
           return {
             id: found._id.toString(),
@@ -1229,7 +1234,7 @@ export class UserFarmService {
         const updated = await FarmModel.findOneAndUpdate(
           { ownerId },
           { $set: safeUpdate },
-          { new: true, upsert: true }
+          { new: true, upsert: true, sort: { updatedAt: -1 } }
         );
         return {
           id: updated._id.toString(),
