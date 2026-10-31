@@ -78,3 +78,54 @@
 .floating-ai-btn {
   animation: ai-pulse 3s infinite;
 }
+
+/* ── Cross-browser CSS Fixes & Tailwind v3 Compatibility ── */
+.outline-hidden,
+.focus\:outline-hidden:focus {
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
+}
+
+/* Native-feel micro-interactions for modals, dropdowns & badges */
+@keyframes pwaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pwaZoomIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pwaSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.animate-in.fade-in {
+  animation-name: pwaFadeIn;
+}
+
+.animate-in.zoom-in,
+.animate-in.zoom-in-95 {
+  animation-name: pwaZoomIn;
+}
+
+.animate-in.slide-in-from-top-1 {
+  animation-name: pwaSlideDown;
+}
+
+/* PWA Standalone optimizations */
+@media all and (display-mode: standalone) {
+  /* Extra top-padding for notch/status bar in installed app mode */
+  header.sticky {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+  }
+}
+

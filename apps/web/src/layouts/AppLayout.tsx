@@ -6,12 +6,16 @@ import { MobileBottomNav } from '../components/common/MobileBottomNav';
 import { MobileDrawer } from '../components/common/MobileDrawer';
 import { FloatingAiButton } from '../components/common/FloatingAiButton';
 import { FloatingAiChatModal } from '../components/common/FloatingAiChatModal';
+import { PwaInstallBanner } from '../components/common/PwaInstallBanner';
 
 export const AppLayout: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-[#f8faf7] text-[#0f291e] overflow-x-hidden">
+      {/* PWA Floating Install Banner and Offline Alert */}
+      <PwaInstallBanner />
+
       {/* Desktop Persistent Sidebar */}
       <Sidebar />
 

@@ -38,12 +38,23 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      spacing: {
+        '13': '3.25rem',
+        '15': '3.75rem',
+        '22': '5.5rem',
+      },
       boxShadow: {
+        '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+        'xs': '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
         'soft': '0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
         'card': '0 4px 20px -2px rgba(22, 101, 52, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03)',
         'elevated': '0 10px 30px -4px rgba(22, 101, 52, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.04)',
       },
+      backdropBlur: {
+        'xs': '2px',
+      },
       borderRadius: {
+        'xs': '0.25rem',
         '2xl': '1rem',
         '3xl': '1.5rem',
       },

@@ -409,8 +409,8 @@ export const MarketPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
+          <div className="overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[580px] text-left text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-gray-400 uppercase text-[11px]">
                   <th className="pb-3 font-semibold text-center w-12">#</th>

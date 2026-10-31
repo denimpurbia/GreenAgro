@@ -10,8 +10,10 @@ import {
   ShieldAlert,
   ArrowRight,
   Sparkles,
+  Download,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { usePwa } from '../../context/PwaContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 
@@ -25,6 +27,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOpen }) => {
   const navigate = useNavigate();
   const { language, setLanguage, user, logout, isAuthenticated } = useApp();
+  const { canInstall, promptInstall } = usePwa();
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -174,6 +177,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
             हिंदी
           </button>
         </div>
+
+        {/* PWA Install Button (Appears when app is installable) */}
+        {canInstall && (
+          <button
+            onClick={promptInstall}
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-agri-800 hover:from-emerald-800 hover:to-agri-900 text-white text-[11px] sm:text-xs font-bold shadow-xs cursor-pointer transition-all active:scale-95 animate-pulse"
+            title={isHi ? 'ग्रीनएग्रो ऐप इंस्टॉल करें' : 'Install GreenAgro App'}
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">{isHi ? 'ऐप इंस्टॉल करें' : 'Install App'}</span>
+          </button>
+        )}
 
         {/* Notifications Bell with Interactive Dropdown */}
         <div className="relative" ref={dropdownRef}>

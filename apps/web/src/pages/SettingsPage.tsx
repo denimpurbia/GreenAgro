@@ -6,13 +6,18 @@ import {
   LogOut,
   ShieldCheck,
   Building2,
+  Smartphone,
+  Download,
+  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { usePwa } from '../context/PwaContext';
 import { authService } from '../services/authService';
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, user, setUser, language, setLanguage, logout } = useApp();
+  const { canInstall, isInstalled, promptInstall } = usePwa();
   const isHi = language === 'hi';
   const isGovt = authService.isGovtOrg(user);
 
@@ -542,6 +547,47 @@ export const SettingsPage: React.FC = () => {
                   className="w-5 h-5 rounded text-agri-700 focus:ring-agri-500"
                 />
               </div>
+            </div>
+
+            {/* PWA Mobile App Card */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-[#f0f9f0] border border-emerald-200 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-agri-800 text-white shadow-xs">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-gray-900 block">
+                    {isHi ? 'प्रोग्रेसिव वेब ऐप (PWA)' : 'Progressive Web App (PWA)'}
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    {isInstalled
+                      ? (isHi ? 'ऐप सफलतापूर्वक इंस्टॉल है (Standalone)' : 'GreenAgro installed on this device')
+                      : (isHi ? 'होम स्क्रीन पर जोड़ें, बिना धीमे इंटरनेट उपयोग करें' : 'Install for instant offline field access')}
+                  </span>
+                </div>
+              </div>
+
+              {isInstalled ? (
+                <div className="p-2 rounded-xl bg-white border border-emerald-200 flex items-center gap-2 text-xs text-emerald-800 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>{isHi ? 'ऐप सक्रिय है — होम स्क्रीन से सीधे खुलेगा' : 'Installed and running as standalone app'}</span>
+                </div>
+              ) : canInstall ? (
+                <button
+                  type="button"
+                  onClick={promptInstall}
+                  className="w-full py-2.5 px-3 rounded-xl bg-agri-800 hover:bg-agri-900 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{isHi ? 'मोबाइल पर ऐप इंस्टॉल करें' : 'Install GreenAgro App'}</span>
+                </button>
+              ) : (
+                <p className="text-[11px] text-gray-600 bg-white/80 p-2.5 rounded-xl border border-gray-200/60 leading-relaxed">
+                  {isHi
+                    ? 'ब्राउज़र मेन्यू (⋮ या ⎋) में जाकर "Add to Home screen" या "ऐप इंस्टॉल करें" पर क्लिक करें।'
+                    : 'Open browser menu (⋮ or ⎋) and select "Add to Home screen" to install GreenAgro on your phone.'}
+                </p>
+              )}
             </div>
 
             {/* Session Management / Log Out */}

@@ -1,0 +1,86 @@
+{
+  "name": "GreenAgro — Smarter Farming",
+  "short_name": "GreenAgro",
+  "description": "AI-powered agricultural intelligence network for small and marginal farmers with real-time weather forecasts, mandi prices, satellite crop health, soil testing, and leaf disease diagnosis.",
+  "start_url": "/app?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f8faf7",
+  "theme_color": "#15803d",
+  "lang": "hi-IN",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Weather Forecast",
+      "short_name": "Weather",
+      "description": "7-day localized farm weather forecasts & rain probability",
+      "url": "/app/weather?source=pwa_shortcut",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Crop Doctor",
+      "short_name": "Doctor",
+      "description": "AI leaf scanning and plant disease diagnostics",
+      "url": "/app/doctor?source=pwa_shortcut",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fair Market Mandi Prices",
+      "short_name": "Market",
+      "description": "Net mandi price realization & transport cost calculator",
+      "url": "/app/market?source=pwa_shortcut",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Farm",
+      "short_name": "My Farm",
+      "description": "Satellite field boundary & crop plots",
+      "url": "/app/farm?source=pwa_shortcut",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
