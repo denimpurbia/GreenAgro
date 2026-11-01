@@ -74,17 +74,21 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
     return () => clearInterval(interval);
   }, [fetchAlerts]);
 
-  // Click outside listener for dropdown
+  // Click outside listener for dropdown (handles both mouse and touch events)
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
     if (isDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [isDropdownOpen]);
 
   const handleMarkAllRead = async () => {
@@ -210,33 +214,51 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
             )}
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu & Mobile Backdrop */}
           {isDropdownOpen && (
-            <div className="absolute right-0 sm:right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-              {/* Dropdown Header */}
-              <div className="p-3.5 bg-gradient-to-r from-[#0f291e] to-[#156637] text-white flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-emerald-300" />
-                  <span className="text-xs sm:text-sm font-bold">
-                    {isHi ? 'अलर्ट एवं सूचनाएं' : 'Notifications & Alerts'}
-                  </span>
-                  {unreadCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-red-500 text-[10px] font-bold">
-                      {unreadCount} {isHi ? 'नए' : 'new'}
-                    </span>
-                  )}
-                </div>
+            <>
+              {/* Mobile Backdrop Overlay */}
+              <div
+                className="fixed inset-0 bg-black/25 backdrop-blur-2xs z-40 sm:hidden"
+                onClick={() => setIsDropdownOpen(false)}
+              />
 
-                {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllRead}
-                    className="text-[11px] font-semibold text-emerald-200 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{isHi ? 'सभी पढ़ें' : 'Mark all read'}</span>
-                  </button>
-                )}
-              </div>
+              {/* Dropdown Menu - Perfectly Centered on Mobile Viewport, Aligned on Desktop */}
+              <div className="fixed sm:absolute left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm sm:max-w-none bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                {/* Dropdown Header */}
+                <div className="p-3.5 bg-gradient-to-r from-[#0f291e] to-[#156637] text-white flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-emerald-300" />
+                    <span className="text-xs sm:text-sm font-bold">
+                      {isHi ? 'अलर्ट एवं सूचनाएं' : 'Notifications & Alerts'}
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-red-500 text-[10px] font-bold">
+                        {unreadCount} {isHi ? 'नए' : 'new'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[11px] font-semibold text-emerald-200 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{isHi ? 'सभी पढ़ें' : 'Mark all read'}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="p-1 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                      aria-label="Close notifications"
+                      title={isHi ? 'बंद करें' : 'Close'}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
               {/* Alerts List */}
               <div className="max-h-80 sm:max-h-96 overflow-y-auto divide-y divide-gray-100">
@@ -330,7 +352,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
                 )}
               </div>
             </div>
-          )}
+          </>
+        )}
         </div>
 
         {/* User Profile / Auth State */}
