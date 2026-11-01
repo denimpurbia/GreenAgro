@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, MapPin, Satellite, Bot, MoreHorizontal, Building2, Waves, Users, Mountain } from 'lucide-react';
+import { Home, MapPin, CloudSun, Store, MoreHorizontal, Building2, Waves, Users, Mountain } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { authService } from '../../services/authService';
 
@@ -23,8 +23,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onToggleMore, 
     : [
         { to: '/app', icon: Home, label: t('nav.home'), exact: true },
         { to: '/app/farm', icon: MapPin, label: t('nav.myFarm') },
-        { to: '/app/satellite', icon: Satellite, label: t('nav.satellite') },
-        { to: '/app/assistant', icon: Bot, label: t('nav.aiAssistant') },
+        { to: '/app/weather', icon: CloudSun, label: t('nav.weather') },
+        { to: '/app/market', icon: Store, label: t('nav.market') },
       ];
 
   return (
