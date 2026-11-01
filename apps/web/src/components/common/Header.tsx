@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Bell,
   Menu,
@@ -135,6 +136,144 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
     return <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />;
   };
 
+  // Reusable notification list & controls
+  const renderNotificationCard = (isMobileModal: boolean) => (
+    <div
+      className={
+        isMobileModal
+          ? 'relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[82vh] animate-in zoom-in-95 duration-150'
+          : 'absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150'
+      }
+    >
+      {/* Dropdown Header */}
+      <div className="p-3.5 bg-gradient-to-r from-[#0f291e] to-[#156637] text-white flex items-center justify-between shadow-xs shrink-0">
+        <div className="flex items-center gap-2">
+          <Bell className="w-4 h-4 text-emerald-300" />
+          <span className="text-xs sm:text-sm font-bold">
+            {isHi ? 'अलर्ट एवं सूचनाएं' : 'Notifications & Alerts'}
+          </span>
+          {unreadCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-red-500 text-[10px] font-bold">
+              {unreadCount} {isHi ? 'नए' : 'new'}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="text-[11px] font-semibold text-emerald-200 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>{isHi ? 'सभी पढ़ें' : 'Mark all read'}</span>
+            </button>
+          )}
+          <button
+            onClick={() => setIsDropdownOpen(false)}
+            className="p-1 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close notifications"
+            title={isHi ? 'बंद करें' : 'Close'}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Alerts List */}
+      <div className="flex-1 overflow-y-auto divide-y divide-gray-100 max-h-80 sm:max-h-96">
+        {alerts.length === 0 ? (
+          <div className="p-8 text-center text-gray-400 space-y-2">
+            <Sparkles className="w-8 h-8 mx-auto text-gray-300" />
+            <p className="text-xs font-semibold">
+              {isHi ? 'कोई नई सूचना नहीं है' : 'No active notifications'}
+            </p>
+            <p className="text-[11px] text-gray-400">
+              {isHi
+                ? 'प्रशासनिक व मौसम चेतावनी यहाँ दिखाई देंगी।'
+                : 'Real weather & administrative alerts will appear here.'}
+            </p>
+          </div>
+        ) : (
+          alerts.slice(0, 10).map((alert) => {
+            const alertTitle = isHi ? alert.titleHi || alert.title : alert.title;
+            const alertMsg = isHi ? alert.messageHi || alert.message : alert.message;
+
+            return (
+              <div
+                key={alert._id}
+                onClick={() => {
+                  if (!alert.isRead) handleMarkRead(alert._id);
+                }}
+                className={`p-3.5 hover:bg-gray-50/80 transition-colors cursor-pointer flex gap-3 ${
+                  alert.isRead ? 'bg-white opacity-75' : 'bg-emerald-50/20'
+                }`}
+              >
+                <div className="mt-0.5 p-1.5 rounded-lg bg-white border border-gray-100 shadow-2xs shrink-0 h-fit">
+                  {getAlertIcon(alert.category, alert.severity)}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <span className="text-xs font-bold text-gray-900 truncate">
+                      {alertTitle}
+                    </span>
+                    {!alert.isRead && (
+                      <span className="w-2 h-2 rounded-full bg-agri-600 shrink-0 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">
+                    {alertMsg}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400">
+                    <span className="capitalize font-semibold text-agri-800">
+                      {alert.category ? alert.category.replace(/_/g, ' ') : 'Advisory'}
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {alert.createdAt
+                        ? new Date(alert.createdAt).toLocaleDateString()
+                        : 'Recent'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Dropdown Footer */}
+      <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs shrink-0">
+        {isGovt ? (
+          <Link
+            to="/app/alerts"
+            onClick={() => setIsDropdownOpen(false)}
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-agri-800 hover:text-agri-950 transition-colors py-1 px-3 w-full"
+          >
+            <span>{isHi ? 'अलर्ट प्रबंधन व प्रसारण' : 'Manage & Broadcast Alerts'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        ) : (
+          <div className="flex items-center justify-between w-full px-2 text-[11px] text-gray-500 font-medium">
+            <span className="flex items-center gap-1.5 text-agri-800 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {isHi ? 'मौसम व सुपर एडमिन अलर्ट लाइव सक्रिय' : 'Weather & admin alerts live'}
+            </span>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-agri-800 hover:underline font-bold cursor-pointer"
+              >
+                {isHi ? 'सब पढ़ें' : 'Mark all read'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e8ece8] px-3 sm:px-4 md:px-8 py-2 sm:py-3.5 flex items-center justify-between transition-all">
       {/* Mobile brand & toggle */}
@@ -214,146 +353,25 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileDrawer, isDrawerOp
             )}
           </button>
 
-          {/* Dropdown Menu & Mobile Backdrop */}
+          {/* Desktop Dropdown: positioned directly below the bell */}
           {isDropdownOpen && (
-            <>
-              {/* Mobile Backdrop Overlay */}
-              <div
-                className="fixed inset-0 bg-black/25 backdrop-blur-2xs z-40 sm:hidden"
-                onClick={() => setIsDropdownOpen(false)}
-              />
-
-              {/* Dropdown Menu - Perfectly Centered on Mobile Viewport, Aligned on Desktop */}
-              <div className="fixed sm:absolute left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm sm:max-w-none bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-                {/* Dropdown Header */}
-                <div className="p-3.5 bg-gradient-to-r from-[#0f291e] to-[#156637] text-white flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-emerald-300" />
-                    <span className="text-xs sm:text-sm font-bold">
-                      {isHi ? 'अलर्ट एवं सूचनाएं' : 'Notifications & Alerts'}
-                    </span>
-                    {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-red-500 text-[10px] font-bold">
-                        {unreadCount} {isHi ? 'नए' : 'new'}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={handleMarkAllRead}
-                        className="text-[11px] font-semibold text-emerald-200 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>{isHi ? 'सभी पढ़ें' : 'Mark all read'}</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="p-1 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                      aria-label="Close notifications"
-                      title={isHi ? 'बंद करें' : 'Close'}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-              {/* Alerts List */}
-              <div className="max-h-80 sm:max-h-96 overflow-y-auto divide-y divide-gray-100">
-                {alerts.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 space-y-2">
-                    <Sparkles className="w-8 h-8 mx-auto text-gray-300" />
-                    <p className="text-xs font-semibold">
-                      {isHi ? 'कोई नई सूचना नहीं है' : 'No active notifications'}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {isHi
-                        ? 'प्रशासनिक व मौसम चेतावनी यहाँ दिखाई देंगी।'
-                        : 'Real weather & administrative alerts will appear here.'}
-                    </p>
-                  </div>
-                ) : (
-                  alerts.slice(0, 10).map((alert) => {
-                    const alertTitle = isHi ? alert.titleHi || alert.title : alert.title;
-                    const alertMsg = isHi ? alert.messageHi || alert.message : alert.message;
-
-                    return (
-                      <div
-                        key={alert._id}
-                        onClick={() => {
-                          if (!alert.isRead) handleMarkRead(alert._id);
-                        }}
-                        className={`p-3.5 hover:bg-gray-50/80 transition-colors cursor-pointer flex gap-3 ${
-                          alert.isRead ? 'bg-white opacity-75' : 'bg-emerald-50/20'
-                        }`}
-                      >
-                        <div className="mt-0.5 p-1.5 rounded-lg bg-white border border-gray-100 shadow-2xs shrink-0 h-fit">
-                          {getAlertIcon(alert.category, alert.severity)}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <span className="text-xs font-bold text-gray-900 truncate">
-                              {alertTitle}
-                            </span>
-                            {!alert.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-agri-600 shrink-0 animate-pulse" />
-                            )}
-                          </div>
-                          <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">
-                            {alertMsg}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400">
-                            <span className="capitalize font-semibold text-agri-800">
-                              {alert.category ? alert.category.replace(/_/g, ' ') : 'Advisory'}
-                            </span>
-                            <span>•</span>
-                            <span>
-                              {alert.createdAt
-                                ? new Date(alert.createdAt).toLocaleDateString()
-                                : 'Recent'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Dropdown Footer */}
-              <div className="p-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
-                {isGovt ? (
-                  <Link
-                    to="/app/alerts"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-agri-800 hover:text-agri-950 transition-colors py-1 px-3 w-full"
-                  >
-                    <span>{isHi ? 'अलर्ट प्रबंधन व प्रसारण' : 'Manage & Broadcast Alerts'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                ) : (
-                  <div className="flex items-center justify-between w-full px-2 text-[11px] text-gray-500 font-medium">
-                    <span className="flex items-center gap-1.5 text-agri-800 font-semibold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      {isHi ? 'मौसम व सुपर एडमिन अलर्ट लाइव सक्रिय' : 'Weather & admin alerts live'}
-                    </span>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={handleMarkAllRead}
-                        className="text-agri-800 hover:underline font-bold cursor-pointer"
-                      >
-                        {isHi ? 'सब पढ़ें' : 'Mark all read'}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="hidden sm:block">
+              {renderNotificationCard(false)}
             </div>
-          </>
-        )}
+          )}
+
+          {/* Mobile Centered Modal: rendered directly into document.body to be exactly in the middle of the screen */}
+          {isDropdownOpen && typeof document !== 'undefined' && createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 sm:hidden"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setIsDropdownOpen(false);
+              }}
+            >
+              {renderNotificationCard(true)}
+            </div>,
+            document.body
+          )}
         </div>
 
         {/* User Profile / Auth State */}
