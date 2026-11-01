@@ -183,6 +183,18 @@ export const SchemesPage: React.FC = () => {
         <div className="flex items-center justify-center h-48">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-agri-700"></div>
         </div>
+      ) : schemes.length === 0 ? (
+        <div className="bg-white rounded-2xl p-10 border border-gray-100 shadow-xs text-center space-y-3">
+          <BookOpen className="w-8 h-8 text-gray-400 mx-auto" />
+          <h3 className="font-bold text-sm text-gray-800">
+            {isHi ? 'कोई योजना उपलब्ध नहीं है' : 'No Schemes Found'}
+          </h3>
+          <p className="text-xs text-gray-500">
+            {isHi
+              ? 'इस श्रेणी में वर्तमान में कोई आधिकारिक योजना सूचीबद्ध नहीं है।'
+              : 'No official schemes are currently listed under this category.'}
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {schemes.map((s) => (
